@@ -1,4 +1,5 @@
 # Welcome to the official CNWK Goal Tracker
+## [https://richard523.github.io/cnwk-goal-tracker/](https://richard523.github.io/cnwk-goal-tracker/)
 <img width="1435" height="650" alt="image" src="https://github.com/user-attachments/assets/bab5f049-4e5d-4802-987a-ce38ab58cdcf" />
 
 <img width="1401" height="836" alt="image" src="https://github.com/user-attachments/assets/a738fbad-83d5-451f-ab71-d646ded5b4d5" />
