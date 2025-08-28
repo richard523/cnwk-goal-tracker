@@ -16,7 +16,7 @@ Clone:
 ```
 git clone https://github.com/richard523/cnwk-goal-tracker.git
 ```
-Run:
+In the cloned directory, run:
 ```
 pnpm install
 pnpm build
