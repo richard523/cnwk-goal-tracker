@@ -114,12 +114,25 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
   const handleProjectChange = (index: number, projectStatus: string) => {
     const updatedEntries = [...newEntries];
-    updatedEntries[index] = {
-      ...updatedEntries[index],
-      currentProject: projectStatus,
-      goal1: PROJECT_STATUS_MAPPING[projectStatus as keyof typeof PROJECT_STATUS_MAPPING]?.goal1 || '',
-      goal2: PROJECT_STATUS_MAPPING[projectStatus as keyof typeof PROJECT_STATUS_MAPPING]?.goal2 || '',
-    };
+    
+    if (projectStatus === "manual") {
+      // For manual description, leave goals blank
+      updatedEntries[index] = {
+        ...updatedEntries[index],
+        currentProject: projectStatus,
+        goal1: '',
+        goal2: '',
+      };
+    } else {
+      // For predefined project statuses, auto-fill goals
+      updatedEntries[index] = {
+        ...updatedEntries[index],
+        currentProject: projectStatus,
+        goal1: PROJECT_STATUS_MAPPING[projectStatus as keyof typeof PROJECT_STATUS_MAPPING]?.goal1 || '',
+        goal2: PROJECT_STATUS_MAPPING[projectStatus as keyof typeof PROJECT_STATUS_MAPPING]?.goal2 || '',
+      };
+    }
+    
     setNewEntries(updatedEntries);
   };
 
@@ -143,6 +156,16 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
       return;
     }
 
+    // For manual entries, also check that goals are filled
+    if (entry.currentProject === "manual" && (!entry.goal1 || !entry.goal2)) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in both goals for manual project description",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createEntryMutation.mutate(entry);
     
     // Remove the entry from new entries after successful creation
@@ -156,7 +179,9 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
   };
 
   const handleCopyEntry = (entry: GoalEntry | FormEntry) => {
-    const projectLabel = PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || entry.currentProject;
+    const projectLabel = entry.currentProject === "manual" 
+      ? "Describe Manually" 
+      : (PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || entry.currentProject);
     const formattedString = `${entry.date}, ${entry.senseiName}, ${entry.ninjaName}, ${projectLabel}, ${entry.description}, Goal 1: ${entry.goal1}, Goal 2: ${entry.goal2}`;
     
     navigator.clipboard.writeText(formattedString).then(() => {
@@ -189,9 +214,22 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
   // Filter project options based on search
   const filterProjectOptions = (searchTerm: string) => {
-    return PROJECT_STATUS_OPTIONS.filter(option =>
+    const filtered = PROJECT_STATUS_OPTIONS.filter(option =>
       option.label.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    
+    // If no matches found and there's a search term, add "Describe Manually" option
+    if (filtered.length === 0 && searchTerm.trim()) {
+      return [{ value: "manual", label: "Describe Manually" }];
+    }
+    
+    return filtered;
+  };
+
+  // Get the currently highlighted project option based on search
+  const getHighlightedProjectOption = (searchTerm: string) => {
+    const filtered = filterProjectOptions(searchTerm);
+    return filtered.length > 0 ? filtered[0] : null;
   };
 
   if (isLoading) {
@@ -324,10 +362,31 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                           <Input
                             type="text"
                             placeholder="Search project status"
-                            value={PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || ''}
+                            value={
+                              entry.currentProject === "manual" 
+                                ? "Describe Manually" 
+                                : (projectSearch[index] || PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || '')
+                            }
                             onChange={(e) => {
                               setProjectSearch({...projectSearch, [index]: e.target.value});
                               setShowProjectDropdown({...showProjectDropdown, [index]: true});
+                              
+                              // Auto-highlight first match
+                              const highlighted = getHighlightedProjectOption(e.target.value);
+                              if (highlighted && e.target.value.length > 0) {
+                                // Don't auto-select, just prepare for highlighting
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const highlighted = getHighlightedProjectOption(projectSearch[index] || '');
+                                if (highlighted) {
+                                  handleProjectChange(index, highlighted.value);
+                                  setShowProjectDropdown({...showProjectDropdown, [index]: false});
+                                }
+                              } else if (e.key === 'Escape') {
+                                setShowProjectDropdown({...showProjectDropdown, [index]: false});
+                              }
                             }}
                             onFocus={() => setShowProjectDropdown({...showProjectDropdown, [index]: true})}
                             onBlur={() => setTimeout(() => setShowProjectDropdown({...showProjectDropdown, [index]: false}), 200)}
@@ -335,13 +394,18 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                           />
                           {showProjectDropdown[index] && (
                             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
-                              {filterProjectOptions(projectSearch[index] || '').map((option) => (
+                              {filterProjectOptions(projectSearch[index] || '').map((option, optionIndex) => (
                                 <div
                                   key={option.value}
-                                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                  className={`px-3 py-2 cursor-pointer ${
+                                    optionIndex === 0 
+                                      ? 'bg-blue-100 hover:bg-blue-200' 
+                                      : 'hover:bg-gray-100'
+                                  }`}
                                   onMouseDown={() => {
                                     handleProjectChange(index, option.value);
                                     setShowProjectDropdown({...showProjectDropdown, [index]: false});
+                                    setProjectSearch({...projectSearch, [index]: ''});
                                   }}
                                 >
                                   {option.label}
@@ -363,20 +427,22 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                       <td className="px-4 py-4 border-r border-border">
                         <Input
                           type="text"
-                          placeholder="Goal 1 (auto-filled)"
+                          placeholder={entry.currentProject === "manual" ? "Enter Goal 1 manually" : "Goal 1 (auto-filled)"}
                           value={entry.goal1}
-                          readOnly
-                          className="bg-muted text-muted-foreground"
+                          onChange={entry.currentProject === "manual" ? (e) => handleInputChange(index, 'goal1', e.target.value) : undefined}
+                          readOnly={entry.currentProject !== "manual"}
+                          className={entry.currentProject === "manual" ? "" : "bg-muted text-muted-foreground"}
                           data-testid={`input-goal1-${index}`}
                         />
                       </td>
                       <td className="px-4 py-4 border-r border-border">
                         <Input
                           type="text"
-                          placeholder="Goal 2 (auto-filled)"
+                          placeholder={entry.currentProject === "manual" ? "Enter Goal 2 manually" : "Goal 2 (auto-filled)"}
                           value={entry.goal2}
-                          readOnly
-                          className="bg-muted text-muted-foreground"
+                          onChange={entry.currentProject === "manual" ? (e) => handleInputChange(index, 'goal2', e.target.value) : undefined}
+                          readOnly={entry.currentProject !== "manual"}
+                          className={entry.currentProject === "manual" ? "" : "bg-muted text-muted-foreground"}
                           data-testid={`input-goal2-${index}`}
                         />
                       </td>
@@ -427,7 +493,9 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                       <td className="px-4 py-4 border-r border-border">
                         <Input
                           type="text"
-                          value={PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || entry.currentProject}
+                          value={entry.currentProject === "manual" 
+                            ? "Describe Manually" 
+                            : (PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || entry.currentProject)}
                           readOnly
                           className="bg-muted text-muted-foreground"
                           data-testid={`text-project-${entry.id}`}
