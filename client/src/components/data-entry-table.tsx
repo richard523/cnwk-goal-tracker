@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type KeyboardEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient"; // apiRequest removed
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Plus, Copy, Trash2, Table, ChevronsUpDown } from "lucide-react";
 import { PROJECT_STATUS_MAPPING, PROJECT_STATUS_OPTIONS, type GoalEntry, type InsertGoalEntry } from "@shared/schema";
+import { goalStorageUtility } from "@/lib/localStorage"; // Renamed to avoid conflict with global localStorage
 
 interface DataEntryTableProps {
   entries: GoalEntry[];
@@ -78,9 +79,9 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
   // Create entry mutation
   const createEntryMutation = useMutation({
-    mutationFn: (entry: InsertGoalEntry) => apiRequest('POST', '/api/goal-entries', entry),
+    mutationFn: (entry: InsertGoalEntry) => goalStorageUtility.createGoalEntry(entry),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['goalEntries'] });
       toast({
         title: "Success",
         description: "Goal entry created successfully",
@@ -98,9 +99,9 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
   // Delete entry mutation
   const deleteEntryMutation = useMutation({
-    mutationFn: (id: string) => apiRequest('DELETE', `/api/goal-entries/${id}`),
+    mutationFn: (id: string) => goalStorageUtility.deleteGoalEntry(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['goalEntries'] });
       toast({
         title: "Success",
         description: "Goal entry deleted successfully",
