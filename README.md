@@ -20,7 +20,5 @@ git clone https://github.com/richard523/cnwk-goal-tracker.git
 In the cloned directory, run:
 ```
 pnpm install
-pnpm build
-pnpm start
+pnpm dev
 ```
-
