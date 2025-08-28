@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Goal Tracker - Next.js App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                },
+                fontFamily: {
+                    sans: ["var(--font-sans)"],
+                }
+            },
+        }
+    };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --background: hsl(210 40% 98%);
+            --foreground: hsl(222.2 84% 4.9%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(222.2 84% 4.9%);
+            --primary: hsl(221.2 83.2% 53.3%);
+            --primary-foreground: hsl(210 40% 98%);
+            --secondary: hsl(210 40% 96%);
+            --secondary-foreground: hsl(222.2 47.4% 11.2%);
+            --muted: hsl(210 40% 96%);
+            --muted-foreground: hsl(215.4 16.3% 46.9%);
+            --accent: hsl(210 40% 96%);
+            --accent-foreground: hsl(222.2 47.4% 11.2%);
+            --destructive: hsl(0 84.2% 60.2%);
+            --destructive-foreground: hsl(210 40% 98%);
+            --border: hsl(214.3 31.8% 91.4%);
+            --input: hsl(214.3 31.8% 91.4%);
+            --ring: hsl(221.2 83.2% 53.3%);
+            --radius: 0.5rem;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+        }
+        
+        .toast {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground min-h-screen">
+    <!-- @COMPONENT: AppLayout -->
+    <div class="min-h-screen bg-background">
+        <!-- Header -->
+        <!-- @COMPONENT: Header -->
+        <header class="bg-card border-b border-border">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <i class="fas fa-target text-primary-foreground text-sm"></i>
+                        </div>
+                        <h1 class="text-xl font-semibold text-foreground">Project Goal Tracker</h1>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground border border-border rounded-md hover:bg-accent transition-colors"
+                                data-event="click:handleExport" data-implementation="Should export all data as CSV">
+                            <i class="fas fa-download mr-2"></i>
+                            Export
+                        </button>
+                        <button class="px-4 py-2 text-sm font-medium text-destructive-foreground bg-destructive hover:bg-destructive/90 rounded-md transition-colors"
+                                data-event="click:handleClearAll" data-implementation="Should clear all stored data with confirmation">
+                            <i class="fas fa-trash mr-2"></i>
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- @END_COMPONENT: Header -->
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- @COMPONENT: DataEntryTable -->
+            <div class="bg-card rounded-lg border border-border shadow-sm">
+                <!-- Table Header -->
+                <div class="px-6 py-4 border-b border-border">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-foreground">Goal Entries</h2>
+                        <button class="inline-flex items-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-md transition-colors"
+                                data-event="click:handleAddRow" data-implementation="Should add new empty row to the table">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add New Entry
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-muted/50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Date</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Sensei Name</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Ninja Name</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Current Project</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 1</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 2</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-card divide-y divide-border" id="dataRows">
+                            <!-- @MAP: entries.map(entry => ( -->
+                            <!-- @COMPONENT: DataRow [entry data] -->
+                            <tr class="hover:bg-muted/25 transition-colors" data-mock="true">
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="date" 
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                           value="2024-01-15" data-bind="entry.date" data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Sensei name"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                           value="Sensei Richard" data-bind="entry.senseiName" data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Ninja name"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                           value="Thomas Liao" data-bind="entry.ninjaName" data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <select class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                            data-event="change:handleProjectChange" data-implementation="Should auto-populate goals based on selection">
+                                        <option value="">Select project status...</option>
+                                        <option value="just-started" selected data-mock="true">Just started current project</option>
+                                        <option value="half-way">Half-way current project</option>
+                                        <option value="finished">Finished current project</option>
+                                    </select>
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Goal 1 (auto-filled)"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-muted text-muted-foreground"
+                                           value="Half of current" data-bind="entry.goal1" readonly data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Goal 2 (auto-filled)"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-muted text-muted-foreground"
+                                           value="Finish current" data-bind="entry.goal2" readonly data-mock="true">
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center space-x-2">
+                                        <button class="p-2 text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors"
+                                                data-event="click:handleCopyRow" data-implementation="Should copy formatted string to clipboard"
+                                                title="Copy to clipboard">
+                                            <i class="fas fa-copy text-sm"></i>
+                                        </button>
+                                        <button class="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-md transition-colors"
+                                                data-event="click:handleDeleteRow" data-implementation="Should remove this row"
+                                                title="Delete row">
+                                            <i class="fas fa-trash text-sm"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- @END_COMPONENT: DataRow -->
+
+                            <!-- Second Row Example -->
+                            <tr class="hover:bg-muted/25 transition-colors" data-mock="true">
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="date" 
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                           value="2024-01-15" data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Sensei name"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                           value="Sensei Maria" data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Ninja name"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                           value="Alex Chen" data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <select class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent">
+                                        <option value="">Select project status...</option>
+                                        <option value="just-started">Just started current project</option>
+                                        <option value="half-way" selected data-mock="true">Half-way current project</option>
+                                        <option value="finished">Finished current project</option>
+                                    </select>
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Goal 1 (auto-filled)"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-muted text-muted-foreground"
+                                           value="Finish current" readonly data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Goal 2 (auto-filled)"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-muted text-muted-foreground"
+                                           value="Half of next project" readonly data-mock="true">
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center space-x-2">
+                                        <button class="p-2 text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors"
+                                                title="Copy to clipboard">
+                                            <i class="fas fa-copy text-sm"></i>
+                                        </button>
+                                        <button class="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-md transition-colors"
+                                                title="Delete row">
+                                            <i class="fas fa-trash text-sm"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Third Row Example -->
+                            <tr class="hover:bg-muted/25 transition-colors" data-mock="true">
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="date" 
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                           value="2024-01-15" data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Sensei name"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                           value="Sensei David" data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Ninja name"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                           value="Emma Wilson" data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <select class="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent">
+                                        <option value="">Select project status...</option>
+                                        <option value="just-started">Just started current project</option>
+                                        <option value="half-way">Half-way current project</option>
+                                        <option value="finished" selected data-mock="true">Finished current project</option>
+                                    </select>
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Goal 1 (auto-filled)"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-muted text-muted-foreground"
+                                           value="Finish half of next-project" readonly data-mock="true">
+                                </td>
+                                <td class="px-4 py-4 border-r border-border">
+                                    <input type="text" 
+                                           placeholder="Goal 2 (auto-filled)"
+                                           class="w-full px-3 py-2 text-sm border border-input rounded-md bg-muted text-muted-foreground"
+                                           value="Finish next-project" readonly data-mock="true">
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center space-x-2">
+                                        <button class="p-2 text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors"
+                                                title="Copy to clipboard">
+                                            <i class="fas fa-copy text-sm"></i>
+                                        </button>
+                                        <button class="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-md transition-colors"
+                                                title="Delete row">
+                                            <i class="fas fa-trash text-sm"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- @END_MAP )) -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div class="px-6 py-12 text-center hidden" id="emptyState" data-implementation="Show when no entries exist">
+                    <i class="fas fa-table text-4xl text-muted-foreground mb-4"></i>
+                    <h3 class="text-lg font-medium text-foreground mb-2">No entries yet</h3>
+                    <p class="text-muted-foreground mb-4">Start by adding your first goal entry</p>
+                    <button class="inline-flex items-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-md transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add First Entry
+                    </button>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: DataEntryTable -->
+
+            <!-- Statistics Cards -->
+            <!-- @COMPONENT: StatisticsSection -->
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-card rounded-lg border border-border p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-users text-2xl text-primary"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-muted-foreground">Total Entries</p>
+                            <p class="text-2xl font-semibold text-foreground" data-bind="stats.totalEntries">3</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-card rounded-lg border border-border p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-chart-line text-2xl text-green-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-muted-foreground">Completed Projects</p>
+                            <p class="text-2xl font-semibold text-foreground" data-bind="stats.completed">1</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-card rounded-lg border border-border p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-clock text-2xl text-yellow-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-muted-foreground">In Progress</p>
+                            <p class="text-2xl font-semibold text-foreground" data-bind="stats.inProgress">2</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: StatisticsSection -->
+
+            <!-- Help Section -->
+            <!-- @COMPONENT: HelpSection -->
+            <div class="mt-8 bg-card rounded-lg border border-border p-6">
+                <h3 class="text-lg font-semibold text-foreground mb-4">
+                    <i class="fas fa-question-circle mr-2"></i>
+                    How it works
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                    <div class="space-y-2">
+                        <h4 class="font-medium text-foreground">Project Status Mapping:</h4>
+                        <ul class="space-y-1 text-muted-foreground">
+                            <li>• <strong>Just started:</strong> Goal 1: Half of current, Goal 2: Finish current</li>
+                            <li>• <strong>Half-way:</strong> Goal 1: Finish current, Goal 2: Half of next project</li>
+                            <li>• <strong>Finished:</strong> Goal 1: Finish half of next-project, Goal 2: Finish next-project</li>
+                        </ul>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="font-medium text-foreground">Features:</h4>
+                        <ul class="space-y-1 text-muted-foreground">
+                            <li>• Auto-fill today's date</li>
+                            <li>• Automatic goal generation</li>
+                            <li>• Copy formatted strings</li>
+                            <li>• Data persistence</li>
+                        </ul>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="font-medium text-foreground">Tips:</h4>
+                        <ul class="space-y-1 text-muted-foreground">
+                            <li>• Use the copy button to share progress</li>
+                            <li>• Export data for external use</li>
+                            <li>• Data is saved automatically</li>
+                            <li>• Responsive design works on mobile</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: HelpSection -->
+        </main>
+    </div>
+    <!-- @END_COMPONENT: AppLayout -->
+
+    <!-- Toast Notification -->
+    <!-- @COMPONENT: ToastNotification -->
+    <div id="toast" class="fixed top-4 right-4 bg-green-600 text-white px-4 py-3 rounded-md shadow-lg toast hidden z-50" data-implementation="Show success/error messages">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span id="toastMessage">Copied to clipboard!</span>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: ToastNotification -->
+
+    <script>
+        // TODO: Implement full React/Next.js functionality
+        (function() {
+            // Mock data structure for demonstration
+            // @STATE: entries:Array = []
+            let entries = [
+                {
+                    id: 1,
+                    date: '2024-01-15',
+                    senseiName: 'Sensei Richard',
+                    ninjaName: 'Thomas Liao',
+                    currentProject: 'just-started',
+                    goal1: 'Half of current',
+                    goal2: 'Finish current'
+                }
+            ];
+
+            // Project status to goals mapping
+            const projectGoalMapping = {
+                'just-started': {
+                    goal1: 'Half of current',
+                    goal2: 'Finish current'
+                },
+                'half-way': {
+                    goal1: 'Finish current',
+                    goal2: 'Half of next project'
+                },
+                'finished': {
+                    goal1: 'Finish half of next-project',
+                    goal2: 'Finish next-project'
+                }
+            };
+
+            // Set today's date on new rows
+            function setTodaysDate() {
+                const today = new Date().toISOString().split('T')[0];
+                const dateInputs = document.querySelectorAll('input[type="date"]');
+                dateInputs.forEach(input => {
+                    if (!input.value) {
+                        input.value = today;
+                    }
+                });
+            }
+
+            // Handle project status change
+            function handleProjectChange(selectElement) {
+                const row = selectElement.closest('tr');
+                const goal1Input = row.querySelector('td:nth-child(5) input');
+                const goal2Input = row.querySelector('td:nth-child(6) input');
+                const selectedProject = selectElement.value;
+
+                if (projectGoalMapping[selectedProject]) {
+                    goal1Input.value = projectGoalMapping[selectedProject].goal1;
+                    goal2Input.value = projectGoalMapping[selectedProject].goal2;
+                } else {
+                    goal1Input.value = '';
+                    goal2Input.value = '';
+                }
+            }
+
+            // Handle copy to clipboard
+            function handleCopyRow(button) {
+                const row = button.closest('tr');
+                const cells = row.querySelectorAll('input, select');
+                
+                const date = cells[0].value;
+                const senseiName = cells[1].value;
+                const ninjaName = cells[2].value;
+                const projectText = cells[3].selectedOptions[0]?.text || '';
+                const goal1 = cells[4].value;
+                const goal2 = cells[5].value;
+
+                const formattedString = `${date}, ${senseiName}, ${ninjaName}, ${projectText}, Goal 1: ${goal1}, Goal 2: ${goal2}`;
+
+                // TODO: Implement actual clipboard API
+                console.log('Copying to clipboard:', formattedString);
+                showToast('Copied to clipboard!');
+            }
+
+            // Show toast notification
+            function showToast(message) {
+                const toast = document.getElementById('toast');
+                const toastMessage = document.getElementById('toastMessage');
+                toastMessage.textContent = message;
+                toast.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 3000);
+            }
+
+            // Add event listeners
+            document.addEventListener('change', function(e) {
+                if (e.target.tagName === 'SELECT') {
+                    handleProjectChange(e.target);
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.fa-copy')) {
+                    handleCopyRow(e.target.closest('button'));
+                }
+                
+                if (e.target.closest('.fa-trash')) {
+                    const row = e.target.closest('tr');
+                    if (confirm('Are you sure you want to delete this entry?')) {
+                        row.remove();
+                        showToast('Entry deleted');
+                    }
+                }
+            });
+
+            // Initialize
+            setTodaysDate();
+
+            // TODO: Implement localStorage persistence
+            // TODO: Implement add new row functionality
+            // TODO: Implement export functionality
+            // TODO: Implement form validation
+            // TODO: Implement responsive mobile optimizations
+        })();
+    </script>
+</body>
+</html>
