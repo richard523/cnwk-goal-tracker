@@ -189,8 +189,8 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@18.3.1)(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       wouter:
-        specifier: ^3.3.5
-        version: 3.3.5(react@18.3.1)
+        specifier: ^3.7.1
+        version: 3.7.1(react@18.3.1)
       ws:
         specifier: ^8.18.0
         version: 8.18.0(bufferutil@4.0.8)
@@ -3486,8 +3486,8 @@ packages:
     engines: {node: '>= 8'}
     hasBin: true
 
-  wouter@3.3.5:
-    resolution: {integrity: sha512-bx3fLQAMn+EhYbBdY3W1gw9ZfO/uchudxYMwOIBzF3HVgqNEEIT199vEoh7FLTC0Vz5+rpMO6NdFsOkGX1QQCw==}
+  wouter@3.7.1:
+    resolution: {integrity: sha512-od5LGmndSUzntZkE2R5CHhoiJ7YMuTIbiXsa0Anytc2RATekgv4sfWRAxLEULBrp7ADzinWQw8g470lkT8+fOw==}
     peerDependencies:
       react: '>=16.8.0'
 
@@ -6449,7 +6449,7 @@ snapshots:
     dependencies:
       isexe: 2.0.0
 
-  wouter@3.3.5(react@18.3.1):
+  wouter@3.7.1(react@18.3.1):
     dependencies:
       mitt: 3.0.1
       react: 18.3.1
