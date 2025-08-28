@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type KeyboardEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Copy, Trash2, Table, Search } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Plus, Copy, Trash2, Table, ChevronsUpDown } from "lucide-react";
 import { PROJECT_STATUS_MAPPING, PROJECT_STATUS_OPTIONS, type GoalEntry, type InsertGoalEntry } from "@shared/schema";
 
 interface DataEntryTableProps {
@@ -32,6 +32,13 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
   const [projectSearch, setProjectSearch] = useState<{[key: number]: string}>({});
   const [showNinjaDropdown, setShowNinjaDropdown] = useState<{[key: number]: boolean}>({});
   const [showProjectDropdown, setShowProjectDropdown] = useState<{[key: number]: boolean}>({});
+  const [focusNewRow, setFocusNewRow] = useState(false);
+
+  const ninjaNameRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const projectRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const descriptionRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const saveButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const addEntryButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Get unique ninja names from existing entries
   const getUniqueNinjaNames = () => {
@@ -52,6 +59,14 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
     }
   }, []);
 
+  useEffect(() => {
+    if (focusNewRow && newEntries.length > 0) {
+      const lastEntryIndex = newEntries.length - 1;
+      ninjaNameRefs.current[lastEntryIndex]?.focus();
+      setFocusNewRow(false);
+    }
+  }, [newEntries, focusNewRow]);
+
   // Save sensei name to localStorage
   const handleSenseiNameSave = () => {
     localStorage.setItem('savedSenseiName', savedSenseiName);
@@ -70,6 +85,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
         title: "Success",
         description: "Goal entry created successfully",
       });
+      addEntryButtonRef.current?.focus();
     },
     onError: () => {
       toast({
@@ -110,13 +126,13 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
       goal2: '',
     };
     setNewEntries([...newEntries, newEntry]);
+    setFocusNewRow(true);
   };
 
   const handleProjectChange = (index: number, projectStatus: string) => {
     const updatedEntries = [...newEntries];
     
     if (projectStatus === "manual") {
-      // For manual description, leave goals blank
       updatedEntries[index] = {
         ...updatedEntries[index],
         currentProject: projectStatus,
@@ -124,7 +140,6 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
         goal2: '',
       };
     } else {
-      // For predefined project statuses, auto-fill goals
       updatedEntries[index] = {
         ...updatedEntries[index],
         currentProject: projectStatus,
@@ -156,7 +171,6 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
       return;
     }
 
-    // For manual entries, also check that goals are filled
     if (entry.currentProject === "manual" && (!entry.goal1 || !entry.goal2)) {
       toast({
         title: "Validation Error",
@@ -168,7 +182,6 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
     createEntryMutation.mutate(entry);
     
-    // Remove the entry from new entries after successful creation
     const updatedEntries = newEntries.filter((_, i) => i !== index);
     setNewEntries(updatedEntries);
   };
@@ -204,32 +217,23 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
     }
   };
 
-  // Filter ninja names based on search
   const filterNinjaNames = (searchTerm: string) => {
     const uniqueNames = getUniqueNinjaNames();
+    if (!searchTerm) return uniqueNames;
     return uniqueNames.filter(name => 
       name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
 
-  // Filter project options based on search
   const filterProjectOptions = (searchTerm: string) => {
+    if (!searchTerm) return PROJECT_STATUS_OPTIONS;
     const filtered = PROJECT_STATUS_OPTIONS.filter(option =>
       option.label.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    
-    // If no matches found and there's a search term, add "Describe Manually" option
-    if (filtered.length === 0 && searchTerm.trim()) {
+    if (filtered.length === 0) {
       return [{ value: "manual", label: "Describe Manually" }];
     }
-    
     return filtered;
-  };
-
-  // Get the currently highlighted project option based on search
-  const getHighlightedProjectOption = (searchTerm: string) => {
-    const filtered = filterProjectOptions(searchTerm);
-    return filtered.length > 0 ? filtered[0] : null;
   };
 
   if (isLoading) {
@@ -276,7 +280,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Goal Entries</CardTitle>
-            <Button onClick={handleAddRow} data-testid="button-add-entry">
+            <Button ref={addEntryButtonRef} onClick={handleAddRow} data-testid="button-add-entry">
               <Plus className="w-4 h-4 mr-2" />
               Add New Entry
             </Button>
@@ -320,107 +324,140 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                         />
                       </td>
                       <td className="px-4 py-4 border-r border-border">
-                        <div className="relative">
-                          <Input
-                            type="text"
-                            placeholder="Search or enter ninja name"
-                            value={entry.ninjaName}
-                            onChange={(e) => {
-                              handleInputChange(index, 'ninjaName', e.target.value);
-                              setNinjaNameSearch({...ninjaNameSearch, [index]: e.target.value});
-                              setShowNinjaDropdown({...showNinjaDropdown, [index]: e.target.value.length > 0});
-                            }}
-                            onFocus={() => setShowNinjaDropdown({...showNinjaDropdown, [index]: true})}
-                            onBlur={() => setTimeout(() => setShowNinjaDropdown({...showNinjaDropdown, [index]: false}), 200)}
-                            data-testid={`input-ninja-${index}`}
-                          />
-                          {showNinjaDropdown[index] && (
-                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                        <Popover
+                          open={showNinjaDropdown[index]}
+                          onOpenChange={(isOpen) => {
+                            setShowNinjaDropdown({ ...showNinjaDropdown, [index]: isOpen });
+                            if (!isOpen) setNinjaNameSearch({ ...ninjaNameSearch, [index]: '' });
+                          }}
+                        >
+                          <PopoverTrigger asChild>
+                            <Button
+                              ref={(el) => (ninjaNameRefs.current[index] = el)}
+                              variant="outline"
+                              role="combobox"
+                              className="w-full justify-between font-normal"
+                            >
+                              {entry.ninjaName || "Select Ninja..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
+                            <Input
+                              placeholder="Search or add ninja..."
+                              value={ninjaNameSearch[index] || ''}
+                              onChange={(e) => setNinjaNameSearch({ ...ninjaNameSearch, [index]: e.target.value })}
+                              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const filtered = filterNinjaNames(ninjaNameSearch[index] || '');
+                                  const selectedName = filtered.length > 0 ? filtered[0] : (ninjaNameSearch[index] || '');
+                                  if (selectedName) {
+                                    handleInputChange(index, 'ninjaName', selectedName);
+                                  }
+                                  setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
+                                  projectRefs.current[index]?.focus();
+                                }
+                              }}
+                            />
+                            <div className="max-h-40 overflow-y-auto mt-2">
                               {filterNinjaNames(ninjaNameSearch[index] || '').map((name) => (
                                 <div
                                   key={name}
                                   className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                                   onMouseDown={() => {
                                     handleInputChange(index, 'ninjaName', name);
-                                    setShowNinjaDropdown({...showNinjaDropdown, [index]: false});
+                                    setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
+                                    projectRefs.current[index]?.focus();
                                   }}
                                 >
                                   {name}
                                 </div>
                               ))}
-                              {entry.ninjaName && !getUniqueNinjaNames().includes(entry.ninjaName) && (
+                              {ninjaNameSearch[index] && !getUniqueNinjaNames().includes(ninjaNameSearch[index]) && (
                                 <div className="px-3 py-2 text-sm text-blue-600 bg-blue-50">
-                                  Add "{entry.ninjaName}" as new ninja
+                                  Add "{ninjaNameSearch[index]}" as new ninja
                                 </div>
                               )}
                             </div>
-                          )}
-                        </div>
+                          </PopoverContent>
+                        </Popover>
                       </td>
                       <td className="px-4 py-4 border-r border-border">
-                        <div className="relative">
-                          <Input
-                            type="text"
-                            placeholder="Search project status"
-                            value={
-                              entry.currentProject === "manual" 
-                                ? "Describe Manually" 
-                                : (projectSearch[index] || PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || '')
-                            }
-                            onChange={(e) => {
-                              setProjectSearch({...projectSearch, [index]: e.target.value});
-                              setShowProjectDropdown({...showProjectDropdown, [index]: true});
-                              
-                              // Auto-highlight first match
-                              const highlighted = getHighlightedProjectOption(e.target.value);
-                              if (highlighted && e.target.value.length > 0) {
-                                // Don't auto-select, just prepare for highlighting
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                const highlighted = getHighlightedProjectOption(projectSearch[index] || '');
-                                if (highlighted) {
-                                  handleProjectChange(index, highlighted.value);
-                                  setShowProjectDropdown({...showProjectDropdown, [index]: false});
+                        <Popover
+                          open={showProjectDropdown[index]}
+                          onOpenChange={(isOpen) => {
+                            setShowProjectDropdown({ ...showProjectDropdown, [index]: isOpen });
+                            if (!isOpen) setProjectSearch({ ...projectSearch, [index]: '' });
+                          }}
+                        >
+                          <PopoverTrigger asChild>
+                            <Button
+                              ref={(el) => (projectRefs.current[index] = el)}
+                              variant="outline"
+                              role="combobox"
+                              className="w-full justify-between font-normal"
+                            >
+                              {PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || "Select Project..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
+                             <Input
+                              placeholder="Search projects..."
+                              value={projectSearch[index] || ''}
+                              onChange={(e) => setProjectSearch({ ...projectSearch, [index]: e.target.value })}
+                              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const searchTerm = projectSearch[index] || '';
+                                  const filtered = PROJECT_STATUS_OPTIONS.filter(option =>
+                                    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+                                  );
+
+                                  if (filtered.length > 0) {
+                                    handleProjectChange(index, filtered[0].value);
+                                  } else {
+                                    handleProjectChange(index, 'manual');
+                                  }
+
+                                  setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
+                                  descriptionRefs.current[index]?.focus();
                                 }
-                              } else if (e.key === 'Escape') {
-                                setShowProjectDropdown({...showProjectDropdown, [index]: false});
-                              }
-                            }}
-                            onFocus={() => setShowProjectDropdown({...showProjectDropdown, [index]: true})}
-                            onBlur={() => setTimeout(() => setShowProjectDropdown({...showProjectDropdown, [index]: false}), 200)}
-                            data-testid={`input-project-${index}`}
-                          />
-                          {showProjectDropdown[index] && (
-                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
-                              {filterProjectOptions(projectSearch[index] || '').map((option, optionIndex) => (
+                              }}
+                            />
+                            <div className="max-h-40 overflow-y-auto mt-2">
+                              {filterProjectOptions(projectSearch[index] || '').map((option) => (
                                 <div
                                   key={option.value}
-                                  className={`px-3 py-2 cursor-pointer ${
-                                    optionIndex === 0 
-                                      ? 'bg-blue-100 hover:bg-blue-200' 
-                                      : 'hover:bg-gray-100'
-                                  }`}
+                                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                                   onMouseDown={() => {
                                     handleProjectChange(index, option.value);
-                                    setShowProjectDropdown({...showProjectDropdown, [index]: false});
-                                    setProjectSearch({...projectSearch, [index]: ''});
+                                    setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
+                                    descriptionRefs.current[index]?.focus();
                                   }}
                                 >
                                   {option.label}
                                 </div>
                               ))}
                             </div>
-                          )}
-                        </div>
+                          </PopoverContent>
+                        </Popover>
                       </td>
                       <td className="px-4 py-4 border-r border-border">
                         <Input
+                          ref={(el) => (descriptionRefs.current[index] = el)}
+                          id={`description-input-${index}`}
                           type="text"
                           placeholder="Enter description"
                           value={entry.description}
                           onChange={(e) => handleInputChange(index, 'description', e.target.value)}
+                          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              saveButtonRefs.current[index]?.focus();
+                            }
+                          }}
                           data-testid={`input-description-${index}`}
                         />
                       </td>
@@ -449,6 +486,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                       <td className="px-4 py-4">
                         <div className="flex items-center space-x-2">
                           <Button
+                            ref={(el) => (saveButtonRefs.current[index] = el)}
                             size="sm"
                             onClick={() => handleSaveEntry(index)}
                             disabled={createEntryMutation.isPending}
