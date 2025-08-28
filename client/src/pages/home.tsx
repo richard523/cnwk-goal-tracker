@@ -46,7 +46,7 @@ export default function Home() {
       return;
     }
 
-    const headers = ['Date', 'Sensei Name', 'Ninja Name', 'Current Project', 'Goal 1', 'Goal 2'];
+    const headers = ['Date', 'Sensei Name', 'Ninja Name', 'Current Project', 'Description', 'Goal 1', 'Goal 2'];
     const csvContent = [
       headers.join(','),
       ...entries.map(entry => [
@@ -54,6 +54,7 @@ export default function Home() {
         entry.senseiName,
         entry.ninjaName,
         entry.currentProject,
+        entry.description,
         entry.goal1,
         entry.goal2
       ].map(field => `"${field}"`).join(','))
