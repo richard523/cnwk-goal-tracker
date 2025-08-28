@@ -337,6 +337,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                               variant="outline"
                               role="combobox"
                               className="w-full justify-between font-normal"
+                              onFocus={() => setShowNinjaDropdown({ ...showNinjaDropdown, [index]: true })}
                             >
                               {entry.ninjaName || "Select Ninja..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -397,6 +398,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                               variant="outline"
                               role="combobox"
                               className="w-full justify-between font-normal"
+                              onFocus={() => setShowProjectDropdown({ ...showProjectDropdown, [index]: true })}
                             >
                               {PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || "Select Project..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
