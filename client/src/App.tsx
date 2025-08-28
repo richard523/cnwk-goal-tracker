@@ -7,7 +7,7 @@ import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 
 function AppRouter() {
-  const basePath = process.env.NODE_ENV === 'development' ? '/' : '/cnwk-goal-tracker/';
+  const basePath = '/cnwk-goal-tracker/';
   return (
     <Router base={basePath}>
       <Switch>
