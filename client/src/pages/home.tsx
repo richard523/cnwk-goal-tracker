@@ -1,26 +1,28 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DataEntryTable } from "@/components/data-entry-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Target, Users, ChartLine, Clock, MessageCircleQuestion, Download, Trash2 } from "lucide-react";
 import type { GoalEntry } from "@shared/schema";
+import { goalStorageUtility } from "@/lib/localStorage"; // Renamed to avoid conflict with global localStorage
 
 export default function Home() {
   const { toast } = useToast();
 
-  // Fetch goal entries
+  // Fetch goal entries from local storage
   const { data: entries = [], isLoading } = useQuery<GoalEntry[]>({
-    queryKey: ['/api/goal-entries'],
+    queryKey: ['goalEntries'],
+    queryFn: () => goalStorageUtility.getGoalEntries(),
   });
 
   // Clear all entries mutation
   const clearAllMutation = useMutation({
-    mutationFn: () => apiRequest('DELETE', '/api/goal-entries'),
+    mutationFn: () => goalStorageUtility.clearAllGoalEntries(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['goalEntries'] });
       toast({
         title: "Success",
         description: "All entries cleared successfully",
