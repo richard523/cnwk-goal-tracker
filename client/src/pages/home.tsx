@@ -56,7 +56,7 @@ export default function Home() {
         entry.senseiName,
         entry.ninjaName,
         entry.currentProject,
-        entry.description,
+        entry.comment,
         entry.goal1,
         entry.goal2
       ].map(field => `"${field}"`).join(','))

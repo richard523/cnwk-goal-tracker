@@ -20,7 +20,7 @@ interface FormEntry {
   senseiName: string;
   ninjaName: string;
   currentProject: string;
-  description: string;
+  comment: string;
   goal1: string;
   goal2: string;
 }
@@ -37,7 +37,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
   const ninjaNameRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const projectRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const descriptionRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const commentRefs = useRef<(HTMLInputElement | null)[]>([]);
   const saveButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const addEntryButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -122,7 +122,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
       senseiName: savedSenseiName,
       ninjaName: '',
       currentProject: '',
-      description: '',
+      comment: '',
       goal1: '',
       goal2: '',
     };
@@ -163,10 +163,10 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
   const handleSaveEntry = (index: number) => {
     const entry = newEntries[index];
-    if (!entry.ninjaName || !entry.currentProject || !entry.description) {
+    if (!entry.ninjaName || !entry.currentProject || !entry.comment) {
       toast({
         title: "Validation Error",
-        description: "Please fill in ninja name, current project, and description",
+        comment: "Please fill in ninja name, current project, and comment",
         variant: "destructive",
       });
       return;
@@ -175,7 +175,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
     if (entry.currentProject === "manual" && (!entry.goal1 || !entry.goal2)) {
       toast({
         title: "Validation Error",
-        description: "Please fill in both goals for manual project description",
+        comment: "Please fill in both goals for manual project comment",
         variant: "destructive",
       });
       return;
@@ -196,7 +196,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
     const projectLabel = entry.currentProject === "manual" 
       ? "Describe Manually" 
       : (PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || entry.currentProject);
-    const formattedString = `${entry.date}, ${entry.senseiName}, ${entry.ninjaName}, ${projectLabel}, ${entry.description}, Goal 1: ${entry.goal1}, Goal 2: ${entry.goal2}`;
+    const formattedString = `${entry.date}, ${entry.senseiName}, ${entry.ninjaName}, ${projectLabel}, ${entry.comment}, Goal 1: ${entry.goal1}, Goal 2: ${entry.goal2}`;
     
     navigator.clipboard.writeText(formattedString).then(() => {
       toast({
@@ -307,7 +307,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Date</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Ninja Name</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Current Project</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Description</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Comment</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 1</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 2</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider sticky right-0 bg-muted shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">Actions</th>
@@ -426,7 +426,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                                   }
 
                                   setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
-                                  descriptionRefs.current[index]?.focus();
+                                  commentRefs.current[index]?.focus();
                                 }
                               }}
                             />
@@ -438,7 +438,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                                   onMouseDown={() => {
                                     handleProjectChange(index, option.value);
                                     setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
-                                    descriptionRefs.current[index]?.focus();
+                                    commentRefs.current[index]?.focus();
                                   }}
                                 >
                                   {option.label}
@@ -450,19 +450,19 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                       </td>
                       <td className="px-4 py-4 border-r border-border">
                         <Input
-                          ref={(el) => (descriptionRefs.current[index] = el)}
-                          id={`description-input-${index}`}
+                          ref={(el) => (commentRefs.current[index] = el)}
+                          id={`comment-input-${index}`}
                           type="text"
-                          placeholder="Enter description"
-                          value={entry.description}
-                          onChange={(e) => handleInputChange(index, 'description', e.target.value)}
+                          placeholder="Enter comment"
+                          value={entry.comment}
+                          onChange={(e) => handleInputChange(index, 'comment', e.target.value)}
                           onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
                               saveButtonRefs.current[index]?.focus();
                             }
                           }}
-                          data-testid={`input-description-${index}`}
+                          data-testid={`input-comment-${index}`}
                         />
                       </td>
                       <td className="px-4 py-4 border-r border-border">
@@ -546,10 +546,10 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                       <td className="px-4 py-4 border-r border-border">
                         <Input
                           type="text"
-                          value={entry.description}
+                          value={entry.comment}
                           readOnly
                           className="bg-muted text-muted-foreground"
-                          data-testid={`text-description-${entry.id}`}
+                          data-testid={`text-comment-${entry.id}`}
                         />
                       </td>
                       <td className="px-4 py-4 border-r border-border">

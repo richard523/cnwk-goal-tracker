@@ -9,7 +9,7 @@ export const goalEntries = pgTable("goal_entries", {
   senseiName: text("sensei_name").notNull(),
   ninjaName: text("ninja_name").notNull(),
   currentProject: text("current_project").notNull(),
-  description: text("description").notNull(),
+  comment: text("comment").notNull(),
   goal1: text("goal1").notNull(),
   goal2: text("goal2").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
