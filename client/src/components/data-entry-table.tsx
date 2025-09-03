@@ -299,17 +299,17 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
               </Button>
             </div>
           ) : (
-            <div className="w-full">
-              <table className="w-full table-fixed">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full whitespace-nowrap">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Date</th>
-                    <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Ninja Name</th>
-                    <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Current Project</th>
-                    <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Description</th>
-                    <th className="w-[15%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 1</th>
-                    <th className="w-[15%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 2</th>
-                    <th className="w-[6%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Ninja Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Current Project</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Description</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 1</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 2</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-card divide-y divide-border">
@@ -471,7 +471,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                           value={entry.goal1}
                           onChange={entry.currentProject === "manual" ? (e) => handleInputChange(index, 'goal1', e.target.value) : undefined}
                           readOnly={entry.currentProject !== "manual"}
-                          className={entry.currentProject === "manual" ? "" : "bg-muted text-muted-foreground"}
+                          className={entry.currentProject ? "w-96" : (entry.currentProject === "manual" ? "" : "bg-muted text-muted-foreground")}
                           data-testid={`input-goal1-${index}`}
                         />
                       </td>
@@ -482,7 +482,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                           value={entry.goal2}
                           onChange={entry.currentProject === "manual" ? (e) => handleInputChange(index, 'goal2', e.target.value) : undefined}
                           readOnly={entry.currentProject !== "manual"}
-                          className={entry.currentProject === "manual" ? "" : "bg-muted text-muted-foreground"}
+                          className={entry.currentProject ? "w-96" : (entry.currentProject === "manual" ? "" : "bg-muted text-muted-foreground")}
                           data-testid={`input-goal2-${index}`}
                         />
                       </td>
