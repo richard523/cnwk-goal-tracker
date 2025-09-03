@@ -110,7 +110,7 @@ export default function Home() {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Target className="text-primary-foreground text-sm" />
               </div>
-              <h1 className="text-xl font-semibold text-foreground">Project Goal Tracker</h1>
+              <h1 className="text-xl font-semibold text-foreground">CNWK Project Goal Tracker by richard and LLMs</h1>
             </div>
             <div className="flex items-center space-x-2">
               <Button
