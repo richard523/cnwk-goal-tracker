@@ -299,17 +299,17 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="w-full">
+              <table className="w-full table-fixed">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Ninja Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Current Project</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Description</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 1</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 2</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
+                    <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Date</th>
+                    <th className="w-[14%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Ninja Name</th>
+                    <th className="w-[16%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Current Project</th>
+                    <th className="w-[10%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Description</th>
+                    <th className="w-[15%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 1</th>
+                    <th className="w-[15%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 2</th>
+                    <th className="w-[6%] px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-card divide-y divide-border">
@@ -337,7 +337,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                               ref={(el) => (ninjaNameRefs.current[index] = el)}
                               variant="outline"
                               role="combobox"
-                              className="w-full justify-between font-normal"
+                              className="w-full justify-between font-normal truncate"
                               onFocus={() => setShowNinjaDropdown({ ...showNinjaDropdown, [index]: true })}
                             >
                               {entry.ninjaName || "Select Ninja..."}
@@ -398,7 +398,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                               ref={(el) => (projectRefs.current[index] = el)}
                               variant="outline"
                               role="combobox"
-                              className="w-full justify-between font-normal"
+                              className="w-full justify-between font-normal truncate"
                               onFocus={() => setShowProjectDropdown({ ...showProjectDropdown, [index]: true })}
                             >
                               {PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || "Select Project..."}
