@@ -299,8 +299,9 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
               </Button>
             </div>
           ) : (
-            <div className="w-full overflow-x-auto">
-              <table className="w-full whitespace-nowrap">
+            <div className="relative">
+              <div className="w-full overflow-x-auto">
+                <table className="w-full whitespace-nowrap">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Date</th>
@@ -309,7 +310,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Description</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 1</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border">Goal 2</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider sticky right-0 bg-muted shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-card divide-y divide-border">
@@ -486,7 +487,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                           data-testid={`input-goal2-${index}`}
                         />
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 sticky right-0 bg-accent shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">
                         <div className="flex items-center space-x-2">
                           <Button
                             ref={(el) => (saveButtonRefs.current[index] = el)}
@@ -569,7 +570,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                           data-testid={`text-goal2-${entry.id}`}
                         />
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 sticky right-0 bg-card hover:bg-muted/25 shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">
                         <div className="flex items-center space-x-2">
                           <Button
                             size="sm"
@@ -597,6 +598,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                 </tbody>
               </table>
             </div>
+          </div>
           )}
         </CardContent>
       </Card>
