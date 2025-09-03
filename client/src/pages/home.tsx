@@ -105,7 +105,7 @@ export default function Home() {
       {/* Header */}
       <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Target className="text-primary-foreground text-sm" />
@@ -144,7 +144,7 @@ export default function Home() {
         <DataEntryTable entries={entries} isLoading={isLoading} />
 
         {/* Statistics Cards */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -201,7 +201,7 @@ export default function Home() {
               <MessageCircleQuestion className="inline mr-2" />
               How it works
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-sm">
               <div className="space-y-2">
                 <h4 className="font-medium text-foreground">Project Status Mapping:</h4>
                 <ul className="space-y-1 text-muted-foreground">
