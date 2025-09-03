@@ -96,8 +96,8 @@ export default function Home() {
   // Calculate statistics
   const stats = {
     totalEntries: entries.length,
-    completed: entries.filter(entry => entry.currentProject === 'finished').length,
-    inProgress: entries.filter(entry => entry.currentProject === 'just-started' || entry.currentProject === 'half-way').length,
+    completed: entries.filter(entry => !entry.currentProject.startsWith('Half of')).length,
+    inProgress: entries.filter(entry => entry.currentProject.startsWith('Half of')).length,
   };
 
   return (
