@@ -46,6 +46,7 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editedEntry, setEditedEntry] = useState<Partial<GoalEntry>>({});
 
+  // State and refs for new entries
   const ninjaNameRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const projectRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const descriptionRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -54,15 +55,35 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
   const saveButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const addEntryButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // State for dropdown navigation
+  // State for dropdown navigation for new entries
   const [ninjaHighlightedIndex, setNinjaHighlightedIndex] = useState<{[key: number]: number | null}>({});
   const [projectHighlightedIndex, setProjectHighlightedIndex] = useState<{[key: number]: number | null}>({});
 
-  // Refs for dropdown options and containers
+  // Refs for dropdown options and containers for new entries
   const ninjaDropdownRefs = useRef<{[key: number]: HTMLDivElement | null}>({});
   const ninjaOptionRefs = useRef<{[key: number]: (HTMLDivElement | null)[]}>({});
   const projectDropdownRefs = useRef<{[key: number]: HTMLDivElement | null}>({});
   const projectOptionRefs = useRef<{[key: number]: (HTMLDivElement | null)[]}>({});
+
+  // State and refs for editing existing entries
+  const [editingNinjaNameSearch, setEditingNinjaNameSearch] = useState<string>('');
+  const [editingProjectSearch, setEditingProjectSearch] = useState<string>('');
+  const [showEditingNinjaDropdown, setShowEditingNinjaDropdown] = useState<boolean>(false);
+  const [showEditingProjectDropdown, setShowEditingProjectDropdown] = useState<boolean>(false);
+  const [editingNinjaHighlightedIndex, setEditingNinjaHighlightedIndex] = useState<number | null>(null);
+  const [editingProjectHighlightedIndex, setEditingProjectHighlightedIndex] = useState<number | null>(null);
+
+  const editingNinjaNameRef = useRef<HTMLButtonElement | null>(null);
+  const editingProjectRef = useRef<HTMLButtonElement | null>(null);
+  const editingDescriptionRef = useRef<HTMLInputElement | null>(null);
+  const editingGoal1Ref = useRef<HTMLInputElement | null>(null);
+  const editingGoal2Ref = useRef<HTMLInputElement | null>(null);
+  const editingSaveButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const editingNinjaDropdownRef = useRef<HTMLDivElement | null>(null);
+  const editingNinjaOptionRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const editingProjectDropdownRef = useRef<HTMLDivElement | null>(null);
+  const editingProjectOptionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const getTodaysDate = (): string => {
     const today = new Date();
@@ -190,6 +211,31 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
     setNewEntries(updatedEntries);
   };
 
+  const handleEditInputChange = (field: keyof GoalEntry, value: string) => {
+    setEditedEntry((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleEditProjectChange = (projectStatus: string) => {
+    if (projectStatus === "manual") {
+      setEditedEntry((prev) => ({
+        ...prev,
+        currentProject: projectStatus,
+        goal1: '',
+        goal2: '',
+      }));
+    } else {
+      setEditedEntry((prev) => ({
+        ...prev,
+        currentProject: projectStatus,
+        goal1: PROJECT_STATUS_MAPPING[projectStatus as keyof typeof PROJECT_STATUS_MAPPING]?.goal1 || '',
+        goal2: PROJECT_STATUS_MAPPING[projectStatus as keyof typeof PROJECT_STATUS_MAPPING]?.goal2 || '',
+      }));
+    }
+  };
+
   const handleSaveEntry = (index: number) => {
     const entry = newEntries[index];
     if (!entry.ninjaName) {
@@ -275,6 +321,12 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
   const handleEditEntry = (entry: GoalEntry) => {
     setEditingEntryId(entry.id);
     setEditedEntry(entry);
+    setEditingNinjaNameSearch(''); // Reset search term
+    setEditingProjectSearch(''); // Reset search term
+    setShowEditingNinjaDropdown(false); // Close dropdown
+    setShowEditingProjectDropdown(false); // Close dropdown
+    setEditingNinjaHighlightedIndex(null); // Reset highlight
+    setEditingProjectHighlightedIndex(null); // Reset highlight
   };
 
   const handleCancelEdit = () => {
@@ -443,7 +495,7 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
                               variant="outline"
                               role="combobox"
                               className="w-full justify-between font-normal truncate"
-                              onFocus={() => setShowNinjaDropdown({ ...showNinjaDropdown, [index]: true })}
+                              
                               tabIndex={0}
                             >
                               {entry.ninjaName || "Select Ninja..."}
@@ -552,7 +604,6 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
                               variant="outline"
                               role="combobox"
                               className="w-full justify-between font-normal truncate"
-                              onFocus={() => setShowProjectDropdown({ ...showProjectDropdown, [index]: true })}
                               tabIndex={0}
                             >
                               {PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || "Select Project..."}
@@ -709,47 +760,245 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
                           <Input
                             type="date"
                             value={editedEntry.date || entry.date}
-                            onChange={(e) => setEditedEntry({ ...editedEntry, date: e.target.value })}
+                            onChange={(e) => handleEditInputChange('date', e.target.value)}
                           />
                         </td>
                         <td className="px-4 py-4 border-r border-border">
-                          <Input
-                            type="text"
-                            value={editedEntry.ninjaName || entry.ninjaName}
-                            onChange={(e) => setEditedEntry({ ...editedEntry, ninjaName: e.target.value })}
-                          />
+                          <Popover
+                            open={showEditingNinjaDropdown}
+                            onOpenChange={(isOpen) => {
+                              setShowEditingNinjaDropdown(isOpen);
+                              if (!isOpen) setEditingNinjaNameSearch('');
+                            }}
+                          >
+                            <PopoverTrigger asChild>
+                              <Button
+                                ref={editingNinjaNameRef}
+                                variant="outline"
+                                role="combobox"
+                                className="w-full justify-between font-normal truncate"
+                                
+                                tabIndex={0}
+                              >
+                                {(editedEntry.ninjaName || entry.ninjaName) || "Select Ninja..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
+                              <Input
+                                placeholder="Search or add ninja..."
+                                value={editingNinjaNameSearch}
+                                onChange={(e) => {
+                                  setEditingNinjaNameSearch(e.target.value);
+                                  setEditingNinjaHighlightedIndex(null); // Reset highlight on search change
+                                }}
+                                onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                                  const filteredNames = filterNinjaNames(editingNinjaNameSearch);
+                                  const currentHighlight = editingNinjaHighlightedIndex;
+
+                                  if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    const nextIndex = currentHighlight === null || currentHighlight === filteredNames.length - 1
+                                      ? 0
+                                      : currentHighlight + 1;
+                                    setEditingNinjaHighlightedIndex(nextIndex);
+                                    editingNinjaOptionRefs.current?.[nextIndex]?.scrollIntoView({ block: 'nearest' });
+                                  } else if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    const prevIndex = currentHighlight === null || currentHighlight === 0
+                                      ? filteredNames.length - 1
+                                      : currentHighlight - 1;
+                                    setEditingNinjaHighlightedIndex(prevIndex);
+                                    editingNinjaOptionRefs.current?.[prevIndex]?.scrollIntoView({ block: 'nearest' });
+                                  } else if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (currentHighlight !== null && filteredNames[currentHighlight]) {
+                                      handleEditInputChange('ninjaName', filteredNames[currentHighlight]);
+                                      setShowEditingNinjaDropdown(false);
+                                      editingProjectRef.current?.focus();
+                                    } else if (editingNinjaNameSearch) {
+                                      // If no highlight but search term exists, add as new ninja
+                                      handleEditInputChange('ninjaName', editingNinjaNameSearch);
+                                      setShowEditingNinjaDropdown(false);
+                                      editingProjectRef.current?.focus();
+                                    }
+                                  } else if (e.key === 'Escape') {
+                                    e.preventDefault();
+                                    setShowEditingNinjaDropdown(false);
+                                    editingNinjaNameRef.current?.focus(); // Focus back on the trigger button
+                                  }
+                                }}
+                              />
+                              <div
+                                ref={editingNinjaDropdownRef}
+                                className="max-h-40 overflow-y-auto mt-2"
+                              >
+                                {filterNinjaNames(editingNinjaNameSearch).map((name, optionIndex) => (
+                                  <div
+                                    key={name}
+                                    ref={(el) => {
+                                      editingNinjaOptionRefs.current[optionIndex] = el;
+                                    }}
+                                    className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${editingNinjaHighlightedIndex === optionIndex ? 'bg-gray-100' : ''}`}
+                                    onMouseDown={() => {
+                                      handleEditInputChange('ninjaName', name);
+                                      setShowEditingNinjaDropdown(false);
+                                      editingProjectRef.current?.focus();
+                                    }}
+                                    onMouseEnter={() => setEditingNinjaHighlightedIndex(optionIndex)}
+                                  >
+                                    {name}
+                                  </div>
+                                ))}
+                                {editingNinjaNameSearch && !getUniqueNinjaNames().includes(editingNinjaNameSearch) && (
+                                  <div
+                                    ref={(el) => {
+                                      editingNinjaOptionRefs.current[filterNinjaNames(editingNinjaNameSearch).length] = el; // Add to the end of options
+                                    }}
+                                    className={`px-3 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 cursor-pointer ${editingNinjaHighlightedIndex === filterNinjaNames(editingNinjaNameSearch).length ? 'bg-blue-100' : ''}`}
+                                    onMouseDown={() => {
+                                      handleEditInputChange('ninjaName', editingNinjaNameSearch);
+                                      setShowEditingNinjaDropdown(false);
+                                      editingProjectRef.current?.focus();
+                                    }}
+                                    onMouseEnter={() => setEditingNinjaHighlightedIndex(filterNinjaNames(editingNinjaNameSearch).length)}
+                                  >
+                                    Add "{editingNinjaNameSearch}" as new ninja
+                                  </div>
+                                )}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Popover
+                            open={showEditingProjectDropdown}
+                            onOpenChange={(isOpen) => {
+                              setShowEditingProjectDropdown(isOpen);
+                              if (!isOpen) setEditingProjectSearch('');
+                            }}
+                          >
+                            <PopoverTrigger asChild>
+                              <Button
+                                ref={editingProjectRef}
+                                variant="outline"
+                                role="combobox"
+                                className="w-full justify-between font-normal truncate"
+                                tabIndex={0}
+                              >
+                                {PROJECT_STATUS_OPTIONS.find(opt => opt.value === (editedEntry.currentProject || entry.currentProject))?.label || "Select Project..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
+                              <Input
+                                placeholder="Search projects..."
+                                value={editingProjectSearch}
+                                onChange={(e) => {
+                                  setEditingProjectSearch(e.target.value);
+                                  setEditingProjectHighlightedIndex(null); // Reset highlight on search change
+                                }}
+                                onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                                  const filteredOptions = filterProjectOptions(editingProjectSearch);
+                                  const currentHighlight = editingProjectHighlightedIndex;
+
+                                  if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    const nextIndex = currentHighlight === null || currentHighlight === filteredOptions.length - 1
+                                      ? 0
+                                      : currentHighlight + 1;
+                                    setEditingProjectHighlightedIndex(nextIndex);
+                                    editingProjectOptionRefs.current?.[nextIndex]?.scrollIntoView({ block: 'nearest' });
+                                  } else if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    const prevIndex = currentHighlight === null || currentHighlight === 0
+                                      ? filteredOptions.length - 1
+                                      : currentHighlight - 1;
+                                    setEditingProjectHighlightedIndex(prevIndex);
+                                    editingProjectOptionRefs.current?.[prevIndex]?.scrollIntoView({ block: 'nearest' });
+                                  } else if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (currentHighlight !== null && filteredOptions[currentHighlight]) {
+                                      handleEditProjectChange(filteredOptions[currentHighlight].value);
+                                      setShowEditingProjectDropdown(false);
+                                      editingDescriptionRef.current?.focus();
+                                    } else if (editingProjectSearch) {
+                                      // If no highlight but search term exists, handle as manual project
+                                      handleEditProjectChange('manual');
+                                      setShowEditingProjectDropdown(false);
+                                      editingDescriptionRef.current?.focus();
+                                    }
+                                  } else if (e.key === 'Escape') {
+                                    e.preventDefault();
+                                    setShowEditingProjectDropdown(false);
+                                    editingProjectRef.current?.focus(); // Focus back on the trigger button
+                                  }
+                                }}
+                              />
+                              <div
+                                ref={editingProjectDropdownRef}
+                                className="max-h-40 overflow-y-auto mt-2"
+                              >
+                                {filterProjectOptions(editingProjectSearch).map((option, optionIndex) => (
+                                  <div
+                                    key={option.value}
+                                    ref={(el) => {
+                                      editingProjectOptionRefs.current[optionIndex] = el;
+                                    }}
+                                    className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${editingProjectHighlightedIndex === optionIndex ? 'bg-gray-100' : ''}`}
+                                    onMouseDown={() => {
+                                      handleEditProjectChange(option.value);
+                                      setShowEditingProjectDropdown(false);
+                                      editingDescriptionRef.current?.focus();
+                                    }}
+                                    onMouseEnter={() => setEditingProjectHighlightedIndex(optionIndex)}
+                                  >
+                                    {option.label}
+                                  </div>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         </td>
                         <td className="px-4 py-4 border-r border-border">
                           <Input
-                            type="text"
-                            value={editedEntry.currentProject || entry.currentProject}
-                            onChange={(e) => setEditedEntry({ ...editedEntry, currentProject: e.target.value })}
-                          />
-                        </td>
-                        <td className="px-4 py-4 border-r border-border">
-                          <Input
+                            ref={editingDescriptionRef}
                             type="text"
                             value={editedEntry.description || entry.description}
-                            onChange={(e) => setEditedEntry({ ...editedEntry, description: e.target.value })}
+                            onChange={(e) => handleEditInputChange('description', e.target.value)}
+                            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                editingSaveButtonRef.current?.focus();
+                              }
+                            }}
                           />
                         </td>
                         <td className="px-4 py-4 border-r border-border">
                           <Input
+                            ref={editingGoal1Ref}
                             type="text"
+                            placeholder={(editedEntry.currentProject || entry.currentProject) === "manual" ? "Enter Goal 1 manually" : "Goal 1 (auto-filled)"}
                             value={editedEntry.goal1 || entry.goal1}
-                            onChange={(e) => setEditedEntry({ ...editedEntry, goal1: e.target.value })}
+                            onChange={(editedEntry.currentProject || entry.currentProject) === "manual" ? (e) => handleEditInputChange('goal1', e.target.value) : undefined}
+                            readOnly={(editedEntry.currentProject || entry.currentProject) !== "manual"}
+                            className={(editedEntry.currentProject || entry.currentProject) ? "w-96" : ((editedEntry.currentProject || entry.currentProject) === "manual" ? "" : "bg-muted text-muted-foreground")}
                           />
                         </td>
                         <td className="px-4 py-4 border-r border-border">
                           <Input
+                            ref={editingGoal2Ref}
                             type="text"
+                            placeholder={(editedEntry.currentProject || entry.currentProject) === "manual" ? "Enter Goal 2 manually" : "Goal 2 (auto-filled)"}
                             value={editedEntry.goal2 || entry.goal2}
-                            onChange={(e) => setEditedEntry({ ...editedEntry, goal2: e.target.value })}
+                            onChange={(editedEntry.currentProject || entry.currentProject) === "manual" ? (e) => handleEditInputChange('goal2', e.target.value) : undefined}
+                            readOnly={(editedEntry.currentProject || entry.currentProject) !== "manual"}
+                            className={(editedEntry.currentProject || entry.currentProject) ? "w-96" : ((editedEntry.currentProject || entry.currentProject) === "manual" ? "" : "bg-muted text-muted-foreground")}
                           />
                         </td>
                         <td className="px-4 py-4 sticky right-0 bg-accent shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">
                           <div className="flex items-center space-x-2">
-                            <Button size="sm" onClick={handleUpdateEntry} disabled={updateEntryMutation.isPending}>Save</Button>
+                            <Button ref={editingSaveButtonRef} size="sm" onClick={handleUpdateEntry} disabled={updateEntryMutation.isPending}>Save</Button>
                             <Button size="sm" variant="outline" onClick={handleCancelEdit}>Cancel</Button>
                           </div>
                         </td>
@@ -869,3 +1118,5 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
     </div>
   );
 }
+
+  
