@@ -39,6 +39,18 @@ export const goalStorageUtility = { // Now uses localStorage
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedEntries));
   },
 
+  async updateGoalEntry(id: string, updatedEntry: Partial<GoalEntry>): Promise<GoalEntry> {
+    const existingEntries = await this.getGoalEntries();
+    const entryIndex = existingEntries.findIndex(entry => entry.id === id);
+    if (entryIndex === -1) {
+      throw new Error("Entry not found");
+    }
+    const newEntries = [...existingEntries];
+    newEntries[entryIndex] = { ...newEntries[entryIndex], ...updatedEntry };
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newEntries));
+    return newEntries[entryIndex];
+  },
+
   async clearAllGoalEntries(): Promise<void> {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   },

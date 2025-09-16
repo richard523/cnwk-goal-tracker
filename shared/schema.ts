@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -12,6 +12,7 @@ export const goalEntries = pgTable("goal_entries", {
   description: text("description").notNull(),
   goal1: text("goal1").notNull(),
   goal2: text("goal2").notNull(),
+  cnwKoin: integer("cnw_koin").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
