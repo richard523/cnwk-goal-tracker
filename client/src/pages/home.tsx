@@ -309,36 +309,80 @@ export default function Home() {
           </CardContent>
         </Card>
       
+      
       {/* Patch Notes Section */}
         <Card className="mt-8">
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4">
-              Patch Notes: September 16, 2025
+              Patch Notes: Pre-September 16, 2025
             </h3>
             <div className="space-y-4 text-sm">
               <div>
-                <h4 className="font-medium text-foreground">Visual Improvements & Bug Fixes</h4>
+                <h4 className="font-medium text-foreground">📝 Data Management & Editing</h4>
+                <h5 className="font-medium text-foreground mt-2">September 16, 2025</h5>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-                  <li>Fixed Visual Bug: Resolved the "double popup" issue that was occurring in the UI. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/0a60c60d41f14fc0af4501b47a6055ec0762b153" target="_blank" rel="noopener noreferrer">0a60c60</a>)</li>
+                  <li>Edit and Copy Functionality: Added the ability to <strong>edit and copy</strong> entries, improving user productivity and data management. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/728daecf51ba12da085741c662b45da227c2c12f" target="_blank" rel="noopener noreferrer">728daec</a>)</li>
+                </ul>
+                <h5 className="font-medium text-foreground mt-2">September 3, 2025</h5>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Project Naming Clarification: Refined project naming logic to avoid ambiguity and ensure consistency. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/bacbcc20075f728171b49f7d4b3d3136c519f0b0" target="_blank" rel="noopener noreferrer">bacbcc2</a>)</li>
+                </ul>
+              </div>
+
+              <div className="mt-4">
+                <h4 className="font-medium text-foreground">🔧 Error Handling & Usability</h4>
+                <h5 className="font-medium text-foreground mt-2">September 16, 2025</h5>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Button Press Interaction: Enhanced button press interactions for better usability and responsiveness. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/74418802a6f1a70decc514d24e49cc54651ae9d8" target="_blank" rel="noopener noreferrer">7441880</a>)</li>
+                </ul>
+                <h5 className="font-medium text-foreground mt-2">September 3, 2025</h5>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Error Handling: Improved validation and feedback for data entry, reducing user errors. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/aca71411f20946b4b0e5ced1471ed6a2ff14c1a1" target="_blank" rel="noopener noreferrer">aca7141</a>)</li>
+                  <li>Sticky Action Column: Made the <strong>Action column sticky</strong> for easier access to edit, delete, and copy functions, especially on large datasets. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/7d347d17ff60550055b56b3eb3538870fd76255b" target="_blank" rel="noopener noreferrer">7d347d1</a>)</li>
+                </ul>
+              </div>
+
+              <div className="mt-4">
+                <h4 className="font-medium text-foreground">📊 Progress Tracking & Counters</h4>
+                <h5 className="font-medium text-foreground mt-2">September 3, 2025</h5>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Counter Tool: Added <strong>stats tracking</strong> for `totalEntries`, `completed`, and `inProgress` to help users monitor progress at a glance. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/aca71411f20946b4b0e5ced1471ed6a2ff14c1a1" target="_blank" rel="noopener noreferrer">aca7141</a>)</li>
+                </ul>
+              </div>
+
+              <div className="mt-4">
+                <h4 className="font-medium text-foreground">📱 UI/UX Improvements</h4>
+                <h5 className="font-medium text-foreground mt-2">September 16, 2025</h5>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
                   <li>Key-Press Improvement: Enhanced the responsiveness and usability of key-press interactions. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/e2515c4a6304247a151b6ccd608d35922a2c64e3" target="_blank" rel="noopener noreferrer">e2515c4</a>)</li>
-                  <li>Sensei Name Logic: Updated the logic for handling and displaying the "Sensei Name" field. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/54dba0f70e1c2ac1f3f328fd4f4d4d522d6a39b1" target="_blank" rel="noopener noreferrer">54dba0f</a>)</li>
-                  <li>Data Entry Ergonomics: Improved the ergonomics of data entry, including renaming and streamlining workflows. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/f677759aa941fb43adcf14b9fd51eee3237a68ed" target="_blank" rel="noopener noreferrer">f677759</a>)</li>
+                </ul>
+                <h5 className="font-medium text-foreground mt-2">September 3, 2025</h5>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Mobile & iPad Optimization: Adjusted layouts for better fit and usability on mobile and tablet devices. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/8b8a9e5abac8d6b6c4934f6f10e959529a9eb733" target="_blank" rel="noopener noreferrer">8b8a9e5</a>)</li>
+                  <li>Title Clarity: Updated titles and labels for better readability and consistency. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/ece2d6e5a151dada6fe525f6ababebe2bfa7c3c1" target="_blank" rel="noopener noreferrer">ece2d6e</a>)</li>
+                </ul>
+                <h5 className="font-medium text-foreground mt-2">August 30, 2025</h5>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>All Projects Support: Expanded the app to track <strong>all projects</strong>, ensuring comprehensive goal management. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/9927cb7fc8e88bac38067bdff0434f077185ed0d" target="_blank" rel="noopener noreferrer">9927cb7</a>)</li>
+                </ul>
+                <h5 className="font-medium text-foreground mt-2">August 28, 2025</h5>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Client-Side Storage: Implemented <strong>local storage</strong> to save and retrieve user data without server dependency. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/6722054d46459a369a29b844d15ad00d243cb191" target="_blank" rel="noopener noreferrer">6722054</a>)</li>
                 </ul>
               </div>
-              <div>
-                <h4 className="font-medium text-foreground">New Features</h4>
+
+              <div className="mt-4">
+                <h4 className="font-medium text-foreground">📂 Schema & Structure</h4>
+                <h5 className="font-medium text-foreground mt-2">September 3, 2025</h5>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-                  <li>Edit and Copy Functionality: Added the ability to edit and copy entries, improving user productivity. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/728daecf51ba12da085741c662b45da227c2c12f" target="_blank" rel="noopener noreferrer">728daec</a>)</li>
-                  <li>Button Press Interaction: Enhanced button press interactions for better usability. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/74418802a6f1a70decc514d24e49cc54651ae9d8" target="_blank" rel="noopener noreferrer">7441880</a>)</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium text-foreground">Merged Pull Requests</h4>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-                  <li>Visuals Branch: Merged the `visuals` branch, incorporating all visual improvements and fixes. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/e53337d70476fcece05307bb7a6cf174db940065" target="_blank" rel="noopener noreferrer">e53337d</a>, <a href="https://github.com/richard523/cnwk-goal-tracker/commit/d7ec6001f8b23c32afeca22a33ea229868c85487" target="_blank" rel="noopener noreferrer">d7ec600</a>)</li>
+                  <li>Schema Updates: Added `halfwaypoints` and refined field widths for better data organization. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/5a61c71cd1d3ff50de741b05a67ace3bea048c78" target="_blank" rel="noopener noreferrer">5a61c71</a>)</li>
+                  <li>Project Status Options: Corrected and expanded status options for accurate tracking. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/97e9f7a392c592be50fbfe0f27aaffca1fb2feb4" target="_blank" rel="noopener noreferrer">97e9f7a</a>)</li>
                 </ul>
               </div>
             </div>
+            <p className="text-sm text-muted-foreground mt-4">
+              These updates focused on <strong>enhancing editing capabilities, clarifying project naming, improving error handling, expanding copy functions, and introducing a counter tool</strong>—all while ensuring a seamless user experience. The dates are now accurate and reflect the actual commit history.
+            </p>
           </CardContent>
         </Card>
       </main>
