@@ -54,78 +54,30 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
   const saveButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const addEntryButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const allRefs = useRef<Array<React.MutableRefObject<(HTMLElement | null)[]>>>([
-    ninjaNameRefs,
-    projectRefs,
-    descriptionRefs,
-    goal1Refs,
-    goal2Refs,
-    saveButtonRefs,
-  ]);
+  // State for dropdown navigation
+  const [ninjaHighlightedIndex, setNinjaHighlightedIndex] = useState<{[key: number]: number | null}>({});
+  const [projectHighlightedIndex, setProjectHighlightedIndex] = useState<{[key: number]: number | null}>({});
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowRight") {
-        const currentActiveElement = document.activeElement;
-        if (!currentActiveElement) return;
+  // Refs for dropdown options and containers
+  const ninjaDropdownRefs = useRef<{[key: number]: HTMLDivElement | null}>({});
+  const ninjaOptionRefs = useRef<{[key: number]: (HTMLDivElement | null)[]}>({});
+  const projectDropdownRefs = useRef<{[key: number]: HTMLDivElement | null}>({});
+  const projectOptionRefs = useRef<{[key: number]: (HTMLDivElement | null)[]}>({});
 
-        let currentRowIndex = -1;
-        let currentFieldIndex = -1;
+  const getTodaysDate = (): string => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
-        // Find the current active element's row and field index within newEntries
-        for (let i = 0; i < newEntries.length; i++) {
-          for (let j = 0; j < allRefs.current.length; j++) {
-            const fieldRef = allRefs.current[j].current[i];
-            if (fieldRef && fieldRef.contains(currentActiveElement)) {
-              currentRowIndex = i;
-              currentFieldIndex = j;
-              break;
-            }
-          }
-          if (currentRowIndex !== -1) break;
-        }
+  const getUniqueNinjaNames = (): string[] => {
+    const ninjaNames = entries.map(entry => entry.ninjaName);
+    return Array.from(new Set(ninjaNames)).filter(Boolean); // Filter out empty strings
+  };
 
-        if (currentRowIndex !== -1 && currentFieldIndex !== -1) {
-          event.preventDefault(); // Prevent default scrolling behavior
-
-          let nextRowIndex = currentRowIndex;
-          let nextFieldIndex = currentFieldIndex;
-
-          if (event.key === "ArrowDown") {
-            nextRowIndex = (currentRowIndex + 1);
-            if (nextRowIndex >= newEntries.length) {
-              nextRowIndex = 0; // Wrap around to the first row
-            }
-          } else if (event.key === "ArrowUp") {
-            nextRowIndex = (currentRowIndex - 1);
-            if (nextRowIndex < 0) {
-              nextRowIndex = newEntries.length - 1; // Wrap around to the last row
-            }
-          } else if (event.key === "ArrowRight") {
-            nextFieldIndex = (currentFieldIndex + 1);
-            if (nextFieldIndex >= allRefs.current.length) {
-              nextFieldIndex = 0; // Wrap around to the first field in the same row
-            }
-          } else if (event.key === "ArrowLeft") {
-            nextFieldIndex = (currentFieldIndex - 1);
-            if (nextFieldIndex < 0) {
-              nextFieldIndex = allRefs.current.length - 1; // Wrap around to the last field in the same row
-            }
-          }
-
-          const nextElement = allRefs.current[nextFieldIndex].current[nextRowIndex];
-          if (nextElement) {
-            (nextElement as HTMLElement).focus();
-          }
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [newEntries]);
+  // Removed the general keyboard navigation useEffect as per new requirements
 
   const handleSenseiNameSave = () => {
     onSenseiNameChange(senseiNameInput);
@@ -502,42 +454,82 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
                             <Input
                               placeholder="Search or add ninja..."
                               value={ninjaNameSearch[index] || ''}
-                              onChange={(e) => setNinjaNameSearch({ ...ninjaNameSearch, [index]: e.target.value })}
+                              onChange={(e) => {
+                                setNinjaNameSearch({ ...ninjaNameSearch, [index]: e.target.value });
+                                setNinjaHighlightedIndex({ ...ninjaHighlightedIndex, [index]: null }); // Reset highlight on search change
+                              }}
                               onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                                if (e.key === 'Enter') {
+                                const filteredNames = filterNinjaNames(ninjaNameSearch[index] || '');
+                                const currentHighlight = ninjaHighlightedIndex[index];
+
+                                if (e.key === 'ArrowDown') {
                                   e.preventDefault();
-                                  const filtered = filterNinjaNames(ninjaNameSearch[index] || '');
-                                  const selectedName = filtered.length > 0 ? filtered[0] : (ninjaNameSearch[index] || '');
-                                  if (selectedName) {
-                                    handleInputChange(index, 'ninjaName', selectedName);
+                                  const nextIndex = currentHighlight === null || currentHighlight === filteredNames.length - 1
+                                    ? 0
+                                    : currentHighlight + 1;
+                                  setNinjaHighlightedIndex({ ...ninjaHighlightedIndex, [index]: nextIndex });
+                                  ninjaOptionRefs.current[index]?.[nextIndex]?.scrollIntoView({ block: 'nearest' });
+                                } else if (e.key === 'ArrowUp') {
+                                  e.preventDefault();
+                                  const prevIndex = currentHighlight === null || currentHighlight === 0
+                                    ? filteredNames.length - 1
+                                    : currentHighlight - 1;
+                                  setNinjaHighlightedIndex({ ...ninjaHighlightedIndex, [index]: prevIndex });
+                                  ninjaOptionRefs.current[index]?.[prevIndex]?.scrollIntoView({ block: 'nearest' });
+                                } else if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (currentHighlight !== null && filteredNames[currentHighlight]) {
+                                    handleInputChange(index, 'ninjaName', filteredNames[currentHighlight]);
+                                    setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
+                                    projectRefs.current[index]?.focus();
+                                  } else if (ninjaNameSearch[index]) {
+                                    // If no highlight but search term exists, add as new ninja
+                                    handleInputChange(index, 'ninjaName', ninjaNameSearch[index]);
+                                    setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
+                                    projectRefs.current[index]?.focus();
                                   }
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
                                   setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
-                                  projectRefs.current[index]?.focus();
+                                  ninjaNameRefs.current[index]?.focus(); // Focus back on the trigger button
                                 }
                               }}
                             />
-                            <div className="max-h-40 overflow-y-auto mt-2">
-                              {filterNinjaNames(ninjaNameSearch[index] || '').map((name) => (
+                            <div
+                              ref={(el) => (ninjaDropdownRefs.current[index] = el)}
+                              className="max-h-40 overflow-y-auto mt-2"
+                            >
+                              {filterNinjaNames(ninjaNameSearch[index] || '').map((name, optionIndex) => (
                                 <div
                                   key={name}
-                                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                  ref={(el) => {
+                                    if (!ninjaOptionRefs.current[index]) ninjaOptionRefs.current[index] = [];
+                                    ninjaOptionRefs.current[index][optionIndex] = el;
+                                  }}
+                                  className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${ninjaHighlightedIndex[index] === optionIndex ? 'bg-gray-100' : ''}`}
                                   onMouseDown={() => {
                                     handleInputChange(index, 'ninjaName', name);
                                     setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
                                     projectRefs.current[index]?.focus();
                                   }}
+                                  onMouseEnter={() => setNinjaHighlightedIndex({ ...ninjaHighlightedIndex, [index]: optionIndex })}
                                 >
                                   {name}
                                 </div>
                               ))}
                               {ninjaNameSearch[index] && !getUniqueNinjaNames().includes(ninjaNameSearch[index]) && (
                                 <div
-                                  className="px-3 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 cursor-pointer"
+                                  ref={(el) => {
+                                    if (!ninjaOptionRefs.current[index]) ninjaOptionRefs.current[index] = [];
+                                    ninjaOptionRefs.current[index][filterNinjaNames(ninjaNameSearch[index] || '').length] = el; // Add to the end of options
+                                  }}
+                                  className={`px-3 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 cursor-pointer ${ninjaHighlightedIndex[index] === filterNinjaNames(ninjaNameSearch[index] || '').length ? 'bg-blue-100' : ''}`}
                                   onMouseDown={() => {
                                     handleInputChange(index, 'ninjaName', ninjaNameSearch[index]);
                                     setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
                                     projectRefs.current[index]?.focus();
                                   }}
+                                  onMouseEnter={() => setNinjaHighlightedIndex({ ...ninjaHighlightedIndex, [index]: filterNinjaNames(ninjaNameSearch[index] || '').length })}
                                 >
                                   Add "{ninjaNameSearch[index]}" as new ninja
                                 </div>
@@ -571,36 +563,65 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
                              <Input
                               placeholder="Search projects..."
                               value={projectSearch[index] || ''}
-                              onChange={(e) => setProjectSearch({ ...projectSearch, [index]: e.target.value })}
+                              onChange={(e) => {
+                                setProjectSearch({ ...projectSearch, [index]: e.target.value });
+                                setProjectHighlightedIndex({ ...projectHighlightedIndex, [index]: null }); // Reset highlight on search change
+                              }}
                               onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                                if (e.key === 'Enter') {
+                                const filteredOptions = filterProjectOptions(projectSearch[index] || '');
+                                const currentHighlight = projectHighlightedIndex[index];
+
+                                if (e.key === 'ArrowDown') {
                                   e.preventDefault();
-                                  const searchTerm = projectSearch[index] || '';
-                                  const filtered = PROJECT_STATUS_OPTIONS.filter(option =>
-                                    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-                                  );
-
-                                  if (filtered.length > 0) {
-                                    handleProjectChange(index, filtered[0].value);
-                                  } else {
+                                  const nextIndex = currentHighlight === null || currentHighlight === filteredOptions.length - 1
+                                    ? 0
+                                    : currentHighlight + 1;
+                                  setProjectHighlightedIndex({ ...projectHighlightedIndex, [index]: nextIndex });
+                                  projectOptionRefs.current[index]?.[nextIndex]?.scrollIntoView({ block: 'nearest' });
+                                } else if (e.key === 'ArrowUp') {
+                                  e.preventDefault();
+                                  const prevIndex = currentHighlight === null || currentHighlight === 0
+                                    ? filteredOptions.length - 1
+                                    : currentHighlight - 1;
+                                  setProjectHighlightedIndex({ ...projectHighlightedIndex, [index]: prevIndex });
+                                  projectOptionRefs.current[index]?.[prevIndex]?.scrollIntoView({ block: 'nearest' });
+                                } else if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (currentHighlight !== null && filteredOptions[currentHighlight]) {
+                                    handleProjectChange(index, filteredOptions[currentHighlight].value);
+                                    setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
+                                    descriptionRefs.current[index]?.focus();
+                                  } else if (projectSearch[index]) {
+                                    // If no highlight but search term exists, handle as manual project
                                     handleProjectChange(index, 'manual');
+                                    setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
+                                    descriptionRefs.current[index]?.focus();
                                   }
-
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
                                   setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
-                                  descriptionRefs.current[index]?.focus();
+                                  projectRefs.current[index]?.focus(); // Focus back on the trigger button
                                 }
                               }}
                             />
-                            <div className="max-h-40 overflow-y-auto mt-2">
-                              {filterProjectOptions(projectSearch[index] || '').map((option) => (
+                            <div
+                              ref={(el) => (projectDropdownRefs.current[index] = el)}
+                              className="max-h-40 overflow-y-auto mt-2"
+                            >
+                              {filterProjectOptions(projectSearch[index] || '').map((option, optionIndex) => (
                                 <div
                                   key={option.value}
-                                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                  ref={(el) => {
+                                    if (!projectOptionRefs.current[index]) projectOptionRefs.current[index] = [];
+                                    projectOptionRefs.current[index][optionIndex] = el;
+                                  }}
+                                  className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${projectHighlightedIndex[index] === optionIndex ? 'bg-gray-100' : ''}`}
                                   onMouseDown={() => {
                                     handleProjectChange(index, option.value);
                                     setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
                                     descriptionRefs.current[index]?.focus();
                                   }}
+                                  onMouseEnter={() => setProjectHighlightedIndex({ ...projectHighlightedIndex, [index]: optionIndex })}
                                 >
                                   {option.label}
                                 </div>
