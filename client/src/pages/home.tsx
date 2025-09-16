@@ -308,6 +308,39 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+      
+      {/* Patch Notes Section */}
+        <Card className="mt-8">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
+              Patch Notes: September 16, 2025
+            </h3>
+            <div className="space-y-4 text-sm">
+              <div>
+                <h4 className="font-medium text-foreground">Visual Improvements & Bug Fixes</h4>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Fixed Visual Bug: Resolved the "double popup" issue that was occurring in the UI. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/0a60c60d41f14fc0af4501b47a6055ec0762b153" target="_blank" rel="noopener noreferrer">0a60c60</a>)</li>
+                  <li>Key-Press Improvement: Enhanced the responsiveness and usability of key-press interactions. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/e2515c4a6304247a151b6ccd608d35922a2c64e3" target="_blank" rel="noopener noreferrer">e2515c4</a>)</li>
+                  <li>Sensei Name Logic: Updated the logic for handling and displaying the "Sensei Name" field. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/54dba0f70e1c2ac1f3f328fd4f4d4d522d6a39b1" target="_blank" rel="noopener noreferrer">54dba0f</a>)</li>
+                  <li>Data Entry Ergonomics: Improved the ergonomics of data entry, including renaming and streamlining workflows. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/f677759aa941fb43adcf14b9fd51eee3237a68ed" target="_blank" rel="noopener noreferrer">f677759</a>)</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium text-foreground">New Features</h4>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Edit and Copy Functionality: Added the ability to edit and copy entries, improving user productivity. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/728daecf51ba12da085741c662b45da227c2c12f" target="_blank" rel="noopener noreferrer">728daec</a>)</li>
+                  <li>Button Press Interaction: Enhanced button press interactions for better usability. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/74418802a6f1a70decc514d24e49cc54651ae9d8" target="_blank" rel="noopener noreferrer">7441880</a>)</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium text-foreground">Merged Pull Requests</h4>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Visuals Branch: Merged the `visuals` branch, incorporating all visual improvements and fixes. (<a href="https://github.com/richard523/cnwk-goal-tracker/commit/e53337d70476fcece05307bb7a6cf174db940065" target="_blank" rel="noopener noreferrer">e53337d</a>, <a href="https://github.com/richard523/cnwk-goal-tracker/commit/d7ec6001f8b23c32afeca22a33ea229868c85487" target="_blank" rel="noopener noreferrer">d7ec600</a>)</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
