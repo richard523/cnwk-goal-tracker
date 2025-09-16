@@ -14,6 +14,9 @@ import { useDebouncedCallback } from "use-debounce";
 interface DataEntryTableProps {
   entries: GoalEntry[];
   isLoading: boolean;
+  isSenseiNameExpired: boolean;
+  savedSenseiName: string;
+  onSenseiNameChange: (name: string) => void;
 }
 
 interface FormEntry {
@@ -27,10 +30,14 @@ interface FormEntry {
   cnwKoin: number;
 }
 
-export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
+export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedSenseiName, onSenseiNameChange }: DataEntryTableProps) {
   const { toast } = useToast();
   const [newEntries, setNewEntries] = useState<FormEntry[]>([]);
-  const [savedSenseiName, setSavedSenseiName] = useState("");
+  const [senseiNameInput, setSenseiNameInput] = useState(savedSenseiName);
+
+  useEffect(() => {
+    setSenseiNameInput(savedSenseiName);
+  }, [savedSenseiName]);
   const [ninjaNameSearch, setNinjaNameSearch] = useState<{[key: number]: string}>({});
   const [projectSearch, setProjectSearch] = useState<{[key: number]: string}>({});
   const [showNinjaDropdown, setShowNinjaDropdown] = useState<{[key: number]: boolean}>({});
@@ -42,57 +49,86 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
   const ninjaNameRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const projectRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const descriptionRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const goal1Refs = useRef<(HTMLInputElement | null)[]>([]);
+  const goal2Refs = useRef<(HTMLInputElement | null)[]>([]);
   const saveButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const addEntryButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Get unique ninja names from existing entries
-  const getUniqueNinjaNames = () => {
-    const ninjaNames = entries.map(entry => entry.ninjaName);
-    return Array.from(new Set(ninjaNames)).sort();
-  };
+  const allRefs = useRef<Array<React.MutableRefObject<(HTMLElement | null)[]>>>([
+    ninjaNameRefs,
+    projectRefs,
+    descriptionRefs,
+    goal1Refs,
+    goal2Refs,
+    saveButtonRefs,
+  ]);
 
-  // Get today's date in YYYY-MM-DD format
-  const getTodaysDate = () => {
-    return new Date().toISOString().split('T')[0];
-  };
-
-  // Load saved sensei name from localStorage
   useEffect(() => {
-    const migrateData = async () => {
-      const entries = await goalStorageUtility.getGoalEntries();
-      const migrationNeeded = entries.some(entry => entry.cnwKoin === undefined);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        const currentActiveElement = document.activeElement;
+        if (!currentActiveElement) return;
 
-      if (migrationNeeded) {
-        const migratedEntries = entries.map(entry => ({
-          ...entry,
-          cnwKoin: entry.cnwKoin ?? 0,
-        }));
-        await goalStorageUtility.clearAllGoalEntries();
-        for (const entry of migratedEntries) {
-          await goalStorageUtility.createGoalEntry(entry);
+        let currentRowIndex = -1;
+        let currentFieldIndex = -1;
+
+        // Find the current active element's row and field index within newEntries
+        for (let i = 0; i < newEntries.length; i++) {
+          for (let j = 0; j < allRefs.current.length; j++) {
+            const fieldRef = allRefs.current[j].current[i];
+            if (fieldRef && fieldRef.contains(currentActiveElement)) {
+              currentRowIndex = i;
+              currentFieldIndex = j;
+              break;
+            }
+          }
+          if (currentRowIndex !== -1) break;
         }
-        queryClient.invalidateQueries({ queryKey: ['goalEntries'] });
+
+        if (currentRowIndex !== -1 && currentFieldIndex !== -1) {
+          event.preventDefault(); // Prevent default scrolling behavior
+
+          let nextRowIndex = currentRowIndex;
+          let nextFieldIndex = currentFieldIndex;
+
+          if (event.key === "ArrowDown") {
+            nextRowIndex = (currentRowIndex + 1);
+            if (nextRowIndex >= newEntries.length) {
+              nextRowIndex = 0; // Wrap around to the first row
+            }
+          } else if (event.key === "ArrowUp") {
+            nextRowIndex = (currentRowIndex - 1);
+            if (nextRowIndex < 0) {
+              nextRowIndex = newEntries.length - 1; // Wrap around to the last row
+            }
+          } else if (event.key === "ArrowRight") {
+            nextFieldIndex = (currentFieldIndex + 1);
+            if (nextFieldIndex >= allRefs.current.length) {
+              nextFieldIndex = 0; // Wrap around to the first field in the same row
+            }
+          } else if (event.key === "ArrowLeft") {
+            nextFieldIndex = (currentFieldIndex - 1);
+            if (nextFieldIndex < 0) {
+              nextFieldIndex = allRefs.current.length - 1; // Wrap around to the last field in the same row
+            }
+          }
+
+          const nextElement = allRefs.current[nextFieldIndex].current[nextRowIndex];
+          if (nextElement) {
+            (nextElement as HTMLElement).focus();
+          }
+        }
       }
     };
 
-    migrateData();
-  }, []);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [newEntries]);
 
-  useEffect(() => {
-    if (focusNewRow && newEntries.length > 0) {
-      const lastEntryIndex = newEntries.length - 1;
-      ninjaNameRefs.current[lastEntryIndex]?.focus();
-      setFocusNewRow(false);
-    }
-  }, [newEntries, focusNewRow]);
-
-  // Save sensei name to localStorage
   const handleSenseiNameSave = () => {
-    localStorage.setItem('savedSenseiName', savedSenseiName);
-    toast({
-      title: "Success",
-      description: "Sensei name saved!",
-    });
+    onSenseiNameChange(senseiNameInput);
   };
 
   // Create entry mutation
@@ -222,8 +258,8 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
     }
     if (!entry.description) {
       toast({
-        title: "--> Scroll --> to fill in description",
-        description: "Description can be smaller goals, subtasks, project details, topics we're learning at the Dojo, or any other relevant info to journal for the parents.",
+        title: "--> Missing Description -->",
+        description: "Scroll Right to fill Description. It can be smaller goals, subtasks, project details, topics we're learning at the Dojo, or any other relevant info to journal for the parents.",
         variant: "destructive",
       })
       return;
@@ -375,8 +411,8 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
             <Input
               type="text"
               placeholder="Enter sensei name"
-              value={savedSenseiName}
-              onChange={(e) => setSavedSenseiName(e.target.value)}
+              value={senseiNameInput}
+              onChange={(e) => setSenseiNameInput(e.target.value)}
               className="flex-1"
               data-testid="input-sensei-name"
             />
@@ -397,7 +433,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Goal Entries</CardTitle>
-            <Button ref={addEntryButtonRef} onClick={handleAddRow} data-testid="button-add-entry">
+            <Button ref={addEntryButtonRef} onClick={handleAddRow} data-testid="button-add-entry" disabled={isSenseiNameExpired || !savedSenseiName}>
               <Plus className="w-4 h-4 mr-2" />
               Add New Entry
             </Button>
@@ -409,7 +445,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
               <Table className="w-16 h-16 text-muted-foreground mb-4 mx-auto" />
               <h3 className="text-lg font-medium text-foreground mb-2">No entries yet</h3>
               <p className="text-muted-foreground mb-4">Start by adding your first goal entry</p>
-              <Button onClick={handleAddRow} data-testid="button-add-first-entry">
+              <Button onClick={handleAddRow} data-testid="button-add-first-entry" disabled={isSenseiNameExpired || !savedSenseiName}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add First Entry
               </Button>
@@ -456,6 +492,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                               role="combobox"
                               className="w-full justify-between font-normal truncate"
                               onFocus={() => setShowNinjaDropdown({ ...showNinjaDropdown, [index]: true })}
+                              tabIndex={0}
                             >
                               {entry.ninjaName || "Select Ninja..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -524,6 +561,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                               role="combobox"
                               className="w-full justify-between font-normal truncate"
                               onFocus={() => setShowProjectDropdown({ ...showProjectDropdown, [index]: true })}
+                              tabIndex={0}
                             >
                               {PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || "Select Project..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -586,10 +624,12 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             }
                           }}
                           data-testid={`input-description-${index}`}
+                          tabIndex={0}
                         />
                       </td>
                       <td className="px-4 py-4 border-r border-border">
                         <Input
+                          ref={(el) => (goal1Refs.current[index] = el)}
                           type="text"
                           placeholder={entry.currentProject === "manual" ? "Enter Goal 1 manually" : "Goal 1 (auto-filled)"}
                           value={entry.goal1}
@@ -597,10 +637,12 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                           readOnly={entry.currentProject !== "manual"}
                           className={entry.currentProject ? "w-96" : (entry.currentProject === "manual" ? "" : "bg-muted text-muted-foreground")}
                           data-testid={`input-goal1-${index}`}
+                          tabIndex={0}
                         />
                       </td>
                       <td className="px-4 py-4 border-r border-border">
                         <Input
+                          ref={(el) => (goal2Refs.current[index] = el)}
                           type="text"
                           placeholder={entry.currentProject === "manual" ? "Enter Goal 2 manually" : "Goal 2 (auto-filled)"}
                           value={entry.goal2}
@@ -608,6 +650,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                           readOnly={entry.currentProject !== "manual"}
                           className={entry.currentProject ? "w-96" : (entry.currentProject === "manual" ? "" : "bg-muted text-muted-foreground")}
                           data-testid={`input-goal2-${index}`}
+                          tabIndex={0}
                         />
                       </td>
                       <td className="px-4 py-4 sticky right-0 bg-accent shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">
@@ -618,6 +661,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             onClick={() => handleSaveEntry(index)}
                             disabled={createEntryMutation.isPending}
                             data-testid={`button-save-${index}`}
+                            tabIndex={0}
                           >
                             Save
                           </Button>
@@ -626,6 +670,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             variant="outline"
                             onClick={() => handleDeleteNewEntry(index)}
                             data-testid={`button-cancel-${index}`}
+                            tabIndex={0}
                           >
                             Cancel
                           </Button>
