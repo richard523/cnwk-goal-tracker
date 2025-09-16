@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Plus, Copy, Trash2, Table, ChevronsUpDown } from "lucide-react";
+import { Plus, Copy, Trash2, Table, ChevronsUpDown, Pencil } from "lucide-react";
 import { PROJECT_STATUS_MAPPING, PROJECT_STATUS_OPTIONS, type GoalEntry, type InsertGoalEntry } from "@shared/schema";
 import { goalStorageUtility } from "@/lib/localStorage"; // Renamed to avoid conflict with global localStorage
 
@@ -34,6 +34,8 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
   const [showNinjaDropdown, setShowNinjaDropdown] = useState<{[key: number]: boolean}>({});
   const [showProjectDropdown, setShowProjectDropdown] = useState<{[key: number]: boolean}>({});
   const [focusNewRow, setFocusNewRow] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editedEntry, setEditedEntry] = useState<Partial<GoalEntry>>({});
 
   const ninjaNameRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const projectRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -92,6 +94,26 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
       toast({
         title: "Error",
         description: "Failed to create goal entry",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update entry mutation
+  const updateEntryMutation = useMutation({
+    mutationFn: (entry: GoalEntry) => goalStorageUtility.updateGoalEntry(entry.id, entry),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goalEntries'] });
+      toast({
+        title: "Success",
+        description: "Goal entry updated successfully",
+      });
+      setEditingEntryId(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update goal entry",
         variant: "destructive",
       });
     },
@@ -216,6 +238,37 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
     if (window.confirm('Are you sure you want to delete this entry?')) {
       deleteEntryMutation.mutate(id);
     }
+  };
+
+  const handleEditEntry = (entry: GoalEntry) => {
+    setEditingEntryId(entry.id);
+    setEditedEntry(entry);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEntryId(null);
+    setEditedEntry({});
+  };
+
+  const handleUpdateEntry = () => {
+    if (editedEntry.id) {
+      updateEntryMutation.mutate(editedEntry as GoalEntry);
+    }
+  };
+
+  const handleFieldCopy = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: "Success",
+        description: "Copied to clipboard!",
+      });
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    });
   };
 
   const filterNinjaNames = (searchTerm: string) => {
@@ -520,87 +573,157 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
                   {/* Saved entries */}
                   {entries.map((entry) => (
-                    <tr key={entry.id} className="hover:bg-muted/25 transition-colors">
-                      <td className="px-4 py-4 border-r border-border">
-                        <Input
-                          type="date"
-                          value={entry.date}
-                          readOnly
-                          className="bg-muted text-muted-foreground"
-                          data-testid={`text-date-${entry.id}`}
-                        />
-                      </td>
-                      <td className="px-4 py-4 border-r border-border">
-                        <Input
-                          type="text"
-                          value={entry.ninjaName}
-                          readOnly
-                          className="bg-muted text-muted-foreground"
-                          data-testid={`text-ninja-${entry.id}`}
-                        />
-                      </td>
-                      <td className="px-4 py-4 border-r border-border">
-                        <Input
-                          type="text"
-                          value={entry.currentProject === "manual" 
-                            ? "Describe Manually" 
-                            : (PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || entry.currentProject)}
-                          readOnly
-                          className="bg-muted text-muted-foreground"
-                          data-testid={`text-project-${entry.id}`}
-                        />
-                      </td>
-                      <td className="px-4 py-4 border-r border-border">
-                        <Input
-                          type="text"
-                          value={entry.description}
-                          readOnly
-                          className="bg-muted text-muted-foreground"
-                          data-testid={`text-description-${entry.id}`}
-                        />
-                      </td>
-                      <td className="px-4 py-4 border-r border-border">
-                        <Input
-                          type="text"
-                          value={entry.goal1}
-                          readOnly
-                          className="bg-muted text-muted-foreground"
-                          data-testid={`text-goal1-${entry.id}`}
-                        />
-                      </td>
-                      <td className="px-4 py-4 border-r border-border">
-                        <Input
-                          type="text"
-                          value={entry.goal2}
-                          readOnly
-                          className="bg-muted text-muted-foreground"
-                          data-testid={`text-goal2-${entry.id}`}
-                        />
-                      </td>
-                      <td className="px-4 py-4 sticky right-0 bg-card hover:bg-muted/25 shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleCopyEntry(entry)}
-                            title="Copy to clipboard"
-                            data-testid={`button-copy-${entry.id}`}
-                          >
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteEntry(entry.id)}
-                            disabled={deleteEntryMutation.isPending}
-                            title="Delete entry"
-                            data-testid={`button-delete-${entry.id}`}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
+                    editingEntryId === entry.id ? (
+                      // Editing row
+                      <tr key={`editing-${entry.id}`} className="hover:bg-muted/25 transition-colors bg-accent/50">
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="date"
+                            value={editedEntry.date || entry.date}
+                            onChange={(e) => setEditedEntry({ ...editedEntry, date: e.target.value })}
+                          />
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="text"
+                            value={editedEntry.ninjaName || entry.ninjaName}
+                            onChange={(e) => setEditedEntry({ ...editedEntry, ninjaName: e.target.value })}
+                          />
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="text"
+                            value={editedEntry.currentProject || entry.currentProject}
+                            onChange={(e) => setEditedEntry({ ...editedEntry, currentProject: e.target.value })}
+                          />
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="text"
+                            value={editedEntry.description || entry.description}
+                            onChange={(e) => setEditedEntry({ ...editedEntry, description: e.target.value })}
+                          />
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="text"
+                            value={editedEntry.goal1 || entry.goal1}
+                            onChange={(e) => setEditedEntry({ ...editedEntry, goal1: e.target.value })}
+                          />
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="text"
+                            value={editedEntry.goal2 || entry.goal2}
+                            onChange={(e) => setEditedEntry({ ...editedEntry, goal2: e.target.value })}
+                          />
+                        </td>
+                        <td className="px-4 py-4 sticky right-0 bg-accent shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">
+                          <div className="flex items-center space-x-2">
+                            <Button size="sm" onClick={handleUpdateEntry} disabled={updateEntryMutation.isPending}>Save</Button>
+                            <Button size="sm" variant="outline" onClick={handleCancelEdit}>Cancel</Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      // Display row
+                      <tr key={entry.id} className="hover:bg-muted/25 transition-colors">
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="date"
+                            value={entry.date}
+                            readOnly
+                            className="bg-muted text-muted-foreground cursor-pointer"
+                            data-testid={`text-date-${entry.id}`}
+                            onClick={() => handleFieldCopy(entry.date)}
+                          />
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="text"
+                            value={entry.ninjaName}
+                            readOnly
+                            className="bg-muted text-muted-foreground cursor-pointer"
+                            data-testid={`text-ninja-${entry.id}`}
+                            onClick={() => handleFieldCopy(entry.ninjaName)}
+                          />
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="text"
+                            value={entry.currentProject === "manual" 
+                              ? "Describe Manually" 
+                              : (PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || entry.currentProject)}
+                            readOnly
+                            className="bg-muted text-muted-foreground cursor-pointer"
+                            data-testid={`text-project-${entry.id}`}
+                            onClick={() => handleFieldCopy(entry.currentProject === "manual" ? "Describe Manually" : (PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || entry.currentProject))}
+                          />
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="text"
+                            value={entry.description}
+                            readOnly
+                            className="bg-muted text-muted-foreground cursor-pointer"
+                            data-testid={`text-description-${entry.id}`}
+                            onClick={() => handleFieldCopy(entry.description)}
+                          />
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="text"
+                            value={entry.goal1}
+                            readOnly
+                            className="bg-muted text-muted-foreground cursor-pointer"
+                            data-testid={`text-goal1-${entry.id}`}
+                            onClick={() => handleFieldCopy(entry.goal1)}
+                          />
+                        </td>
+                        <td className="px-4 py-4 border-r border-border">
+                          <Input
+                            type="text"
+                            value={entry.goal2}
+                            readOnly
+                            className="bg-muted text-muted-foreground cursor-pointer"
+                            data-testid={`text-goal2-${entry.id}`}
+                            onClick={() => handleFieldCopy(entry.goal2)}
+                          />
+                        </td>
+                        <td className="px-4 py-4 sticky right-0 bg-card hover:bg-muted/25 shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCopyEntry(entry)}
+                              title="Copy to clipboard"
+                              data-testid={`button-copy-${entry.id}`}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditEntry(entry)}
+                              title="Edit entry"
+                              data-testid={`button-edit-${entry.id}`}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteEntry(entry.id)}
+                              disabled={deleteEntryMutation.isPending}
+                              title="Delete entry"
+                              data-testid={`button-delete-${entry.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
                   ))}
                 </tbody>
               </table>
