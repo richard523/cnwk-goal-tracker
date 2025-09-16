@@ -6,13 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Plus, Copy, Trash2, Table, ChevronsUpDown, Pencil } from "lucide-react";
+import { Plus, Copy, Trash2, Table, ChevronsUpDown, Pencil, Minus } from "lucide-react";
 import { PROJECT_STATUS_MAPPING, PROJECT_STATUS_OPTIONS, type GoalEntry, type InsertGoalEntry } from "@shared/schema";
 import { goalStorageUtility } from "@/lib/localStorage"; // Renamed to avoid conflict with global localStorage
+import { useDebouncedCallback } from "use-debounce";
 
 interface DataEntryTableProps {
   entries: GoalEntry[];
   isLoading: boolean;
+  isSenseiNameExpired: boolean;
+  savedSenseiName: string;
+  onSenseiNameChange: (name: string) => void;
 }
 
 interface FormEntry {
@@ -23,12 +27,17 @@ interface FormEntry {
   description: string;
   goal1: string;
   goal2: string;
+  cnwKoin: number;
 }
 
-export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
+export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedSenseiName, onSenseiNameChange }: DataEntryTableProps) {
   const { toast } = useToast();
   const [newEntries, setNewEntries] = useState<FormEntry[]>([]);
-  const [savedSenseiName, setSavedSenseiName] = useState("");
+  const [senseiNameInput, setSenseiNameInput] = useState(savedSenseiName);
+
+  useEffect(() => {
+    setSenseiNameInput(savedSenseiName);
+  }, [savedSenseiName]);
   const [ninjaNameSearch, setNinjaNameSearch] = useState<{[key: number]: string}>({});
   const [projectSearch, setProjectSearch] = useState<{[key: number]: string}>({});
   const [showNinjaDropdown, setShowNinjaDropdown] = useState<{[key: number]: boolean}>({});
@@ -40,43 +49,38 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
   const ninjaNameRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const projectRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const descriptionRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const goal1Refs = useRef<(HTMLInputElement | null)[]>([]);
+  const goal2Refs = useRef<(HTMLInputElement | null)[]>([]);
   const saveButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const addEntryButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Get unique ninja names from existing entries
-  const getUniqueNinjaNames = () => {
+  // State for dropdown navigation
+  const [ninjaHighlightedIndex, setNinjaHighlightedIndex] = useState<{[key: number]: number | null}>({});
+  const [projectHighlightedIndex, setProjectHighlightedIndex] = useState<{[key: number]: number | null}>({});
+
+  // Refs for dropdown options and containers
+  const ninjaDropdownRefs = useRef<{[key: number]: HTMLDivElement | null}>({});
+  const ninjaOptionRefs = useRef<{[key: number]: (HTMLDivElement | null)[]}>({});
+  const projectDropdownRefs = useRef<{[key: number]: HTMLDivElement | null}>({});
+  const projectOptionRefs = useRef<{[key: number]: (HTMLDivElement | null)[]}>({});
+
+  const getTodaysDate = (): string => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getUniqueNinjaNames = (): string[] => {
     const ninjaNames = entries.map(entry => entry.ninjaName);
-    return Array.from(new Set(ninjaNames)).sort();
+    return Array.from(new Set(ninjaNames)).filter(Boolean); // Filter out empty strings
   };
 
-  // Get today's date in YYYY-MM-DD format
-  const getTodaysDate = () => {
-    return new Date().toISOString().split('T')[0];
-  };
+  // Removed the general keyboard navigation useEffect as per new requirements
 
-  // Load saved sensei name from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('savedSenseiName');
-    if (saved) {
-      setSavedSenseiName(saved);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (focusNewRow && newEntries.length > 0) {
-      const lastEntryIndex = newEntries.length - 1;
-      ninjaNameRefs.current[lastEntryIndex]?.focus();
-      setFocusNewRow(false);
-    }
-  }, [newEntries, focusNewRow]);
-
-  // Save sensei name to localStorage
   const handleSenseiNameSave = () => {
-    localStorage.setItem('savedSenseiName', savedSenseiName);
-    toast({
-      title: "Success",
-      description: "Sensei name saved!",
-    });
+    onSenseiNameChange(senseiNameInput);
   };
 
   // Create entry mutation
@@ -102,13 +106,15 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
   // Update entry mutation
   const updateEntryMutation = useMutation({
     mutationFn: (entry: GoalEntry) => goalStorageUtility.updateGoalEntry(entry.id, entry),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['goalEntries'] });
-      toast({
-        title: "Success",
-        description: "Goal entry updated successfully",
-      });
-      setEditingEntryId(null);
+      if (Object.keys(variables).length > 2) { // More than just id and cnwKoin
+        toast({
+          title: "Success",
+          description: "Goal entry updated successfully",
+        });
+        setEditingEntryId(null);
+      }
     },
     onError: () => {
       toast({
@@ -147,6 +153,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
       description: '',
       goal1: '',
       goal2: '',
+      cnwKoin: 0,
     };
     setNewEntries([...newEntries, newEntry]);
     setFocusNewRow(true);
@@ -185,10 +192,35 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
   const handleSaveEntry = (index: number) => {
     const entry = newEntries[index];
+    if (!entry.ninjaName) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in ninja name.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!entry.currentProject) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a current project.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!entry.description) {
+      toast({
+        title: "--> Missing Description -->",
+        description: "Scroll Right to fill Description. It can be smaller goals, subtasks, project details, topics we're learning at the Dojo, or any other relevant info to journal for the parents.",
+        variant: "destructive",
+      })
+      return;
+    }
+
     if (!entry.ninjaName || !entry.currentProject || !entry.description) {
       toast({
         title: "Validation Error",
-        description: "Please fill in ninja name, current project, and description",
+        description: "Please fill in ninja name, current project, and description.",
         variant: "destructive",
       });
       return;
@@ -218,7 +250,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
     const projectLabel = entry.currentProject === "manual" 
       ? "Describe Manually" 
       : (PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || entry.currentProject);
-    const formattedString = `${entry.date}, ${entry.senseiName}, ${entry.ninjaName}, ${projectLabel}, ${entry.description}, Goal 1: ${entry.goal1}, Goal 2: ${entry.goal2}`;
+    const formattedString = `${entry.date}, ${entry.senseiName}, ${entry.ninjaName}, ${projectLabel}, ${entry.description}, Goal 1: ${entry.goal1}, Goal 2: ${entry.goal2}, Today's CNWKoin: ${entry.cnwKoin}`;
     
     navigator.clipboard.writeText(formattedString).then(() => {
       toast({
@@ -254,6 +286,25 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
     if (editedEntry.id) {
       updateEntryMutation.mutate(editedEntry as GoalEntry);
     }
+  };
+
+  const handleUpdateKoin = (id: string, currentKoin: number, change: number) => {
+    const newKoin = currentKoin + change;
+    updateEntryMutation.mutate({ id, cnwKoin: newKoin } as GoalEntry);
+  };
+
+  const debouncedUpdateKoin = useDebouncedCallback(handleUpdateKoin, 300);
+
+  const handleKoinButtonClick = (id: string, currentKoin: number, change: number) => {
+    const newKoin = currentKoin + change;
+    // Optimistically update the UI
+    queryClient.setQueryData(['goalEntries'], (oldData: GoalEntry[] | undefined) => {
+      if (!oldData) return [];
+      return oldData.map(entry => 
+        entry.id === id ? { ...entry, cnwKoin: newKoin } : entry
+      );
+    });
+    debouncedUpdateKoin(id, currentKoin, change);
   };
 
   const handleFieldCopy = (text: string) => {
@@ -312,8 +363,8 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
             <Input
               type="text"
               placeholder="Enter sensei name"
-              value={savedSenseiName}
-              onChange={(e) => setSavedSenseiName(e.target.value)}
+              value={senseiNameInput}
+              onChange={(e) => setSenseiNameInput(e.target.value)}
               className="flex-1"
               data-testid="input-sensei-name"
             />
@@ -334,7 +385,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Goal Entries</CardTitle>
-            <Button ref={addEntryButtonRef} onClick={handleAddRow} data-testid="button-add-entry">
+            <Button ref={addEntryButtonRef} onClick={handleAddRow} data-testid="button-add-entry" disabled={isSenseiNameExpired || !savedSenseiName}>
               <Plus className="w-4 h-4 mr-2" />
               Add New Entry
             </Button>
@@ -346,7 +397,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
               <Table className="w-16 h-16 text-muted-foreground mb-4 mx-auto" />
               <h3 className="text-lg font-medium text-foreground mb-2">No entries yet</h3>
               <p className="text-muted-foreground mb-4">Start by adding your first goal entry</p>
-              <Button onClick={handleAddRow} data-testid="button-add-first-entry">
+              <Button onClick={handleAddRow} data-testid="button-add-first-entry" disabled={isSenseiNameExpired || !savedSenseiName}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add First Entry
               </Button>
@@ -393,6 +444,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                               role="combobox"
                               className="w-full justify-between font-normal truncate"
                               onFocus={() => setShowNinjaDropdown({ ...showNinjaDropdown, [index]: true })}
+                              tabIndex={0}
                             >
                               {entry.ninjaName || "Select Ninja..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -402,42 +454,82 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             <Input
                               placeholder="Search or add ninja..."
                               value={ninjaNameSearch[index] || ''}
-                              onChange={(e) => setNinjaNameSearch({ ...ninjaNameSearch, [index]: e.target.value })}
+                              onChange={(e) => {
+                                setNinjaNameSearch({ ...ninjaNameSearch, [index]: e.target.value });
+                                setNinjaHighlightedIndex({ ...ninjaHighlightedIndex, [index]: null }); // Reset highlight on search change
+                              }}
                               onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                                if (e.key === 'Enter') {
+                                const filteredNames = filterNinjaNames(ninjaNameSearch[index] || '');
+                                const currentHighlight = ninjaHighlightedIndex[index];
+
+                                if (e.key === 'ArrowDown') {
                                   e.preventDefault();
-                                  const filtered = filterNinjaNames(ninjaNameSearch[index] || '');
-                                  const selectedName = filtered.length > 0 ? filtered[0] : (ninjaNameSearch[index] || '');
-                                  if (selectedName) {
-                                    handleInputChange(index, 'ninjaName', selectedName);
+                                  const nextIndex = currentHighlight === null || currentHighlight === filteredNames.length - 1
+                                    ? 0
+                                    : currentHighlight + 1;
+                                  setNinjaHighlightedIndex({ ...ninjaHighlightedIndex, [index]: nextIndex });
+                                  ninjaOptionRefs.current[index]?.[nextIndex]?.scrollIntoView({ block: 'nearest' });
+                                } else if (e.key === 'ArrowUp') {
+                                  e.preventDefault();
+                                  const prevIndex = currentHighlight === null || currentHighlight === 0
+                                    ? filteredNames.length - 1
+                                    : currentHighlight - 1;
+                                  setNinjaHighlightedIndex({ ...ninjaHighlightedIndex, [index]: prevIndex });
+                                  ninjaOptionRefs.current[index]?.[prevIndex]?.scrollIntoView({ block: 'nearest' });
+                                } else if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (currentHighlight !== null && filteredNames[currentHighlight]) {
+                                    handleInputChange(index, 'ninjaName', filteredNames[currentHighlight]);
+                                    setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
+                                    projectRefs.current[index]?.focus();
+                                  } else if (ninjaNameSearch[index]) {
+                                    // If no highlight but search term exists, add as new ninja
+                                    handleInputChange(index, 'ninjaName', ninjaNameSearch[index]);
+                                    setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
+                                    projectRefs.current[index]?.focus();
                                   }
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
                                   setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
-                                  projectRefs.current[index]?.focus();
+                                  ninjaNameRefs.current[index]?.focus(); // Focus back on the trigger button
                                 }
                               }}
                             />
-                            <div className="max-h-40 overflow-y-auto mt-2">
-                              {filterNinjaNames(ninjaNameSearch[index] || '').map((name) => (
+                            <div
+                              ref={(el) => (ninjaDropdownRefs.current[index] = el)}
+                              className="max-h-40 overflow-y-auto mt-2"
+                            >
+                              {filterNinjaNames(ninjaNameSearch[index] || '').map((name, optionIndex) => (
                                 <div
                                   key={name}
-                                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                  ref={(el) => {
+                                    if (!ninjaOptionRefs.current[index]) ninjaOptionRefs.current[index] = [];
+                                    ninjaOptionRefs.current[index][optionIndex] = el;
+                                  }}
+                                  className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${ninjaHighlightedIndex[index] === optionIndex ? 'bg-gray-100' : ''}`}
                                   onMouseDown={() => {
                                     handleInputChange(index, 'ninjaName', name);
                                     setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
                                     projectRefs.current[index]?.focus();
                                   }}
+                                  onMouseEnter={() => setNinjaHighlightedIndex({ ...ninjaHighlightedIndex, [index]: optionIndex })}
                                 >
                                   {name}
                                 </div>
                               ))}
                               {ninjaNameSearch[index] && !getUniqueNinjaNames().includes(ninjaNameSearch[index]) && (
                                 <div
-                                  className="px-3 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 cursor-pointer"
+                                  ref={(el) => {
+                                    if (!ninjaOptionRefs.current[index]) ninjaOptionRefs.current[index] = [];
+                                    ninjaOptionRefs.current[index][filterNinjaNames(ninjaNameSearch[index] || '').length] = el; // Add to the end of options
+                                  }}
+                                  className={`px-3 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 cursor-pointer ${ninjaHighlightedIndex[index] === filterNinjaNames(ninjaNameSearch[index] || '').length ? 'bg-blue-100' : ''}`}
                                   onMouseDown={() => {
                                     handleInputChange(index, 'ninjaName', ninjaNameSearch[index]);
                                     setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
                                     projectRefs.current[index]?.focus();
                                   }}
+                                  onMouseEnter={() => setNinjaHighlightedIndex({ ...ninjaHighlightedIndex, [index]: filterNinjaNames(ninjaNameSearch[index] || '').length })}
                                 >
                                   Add "{ninjaNameSearch[index]}" as new ninja
                                 </div>
@@ -461,6 +553,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                               role="combobox"
                               className="w-full justify-between font-normal truncate"
                               onFocus={() => setShowProjectDropdown({ ...showProjectDropdown, [index]: true })}
+                              tabIndex={0}
                             >
                               {PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || "Select Project..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -470,36 +563,65 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                              <Input
                               placeholder="Search projects..."
                               value={projectSearch[index] || ''}
-                              onChange={(e) => setProjectSearch({ ...projectSearch, [index]: e.target.value })}
+                              onChange={(e) => {
+                                setProjectSearch({ ...projectSearch, [index]: e.target.value });
+                                setProjectHighlightedIndex({ ...projectHighlightedIndex, [index]: null }); // Reset highlight on search change
+                              }}
                               onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                                if (e.key === 'Enter') {
+                                const filteredOptions = filterProjectOptions(projectSearch[index] || '');
+                                const currentHighlight = projectHighlightedIndex[index];
+
+                                if (e.key === 'ArrowDown') {
                                   e.preventDefault();
-                                  const searchTerm = projectSearch[index] || '';
-                                  const filtered = PROJECT_STATUS_OPTIONS.filter(option =>
-                                    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-                                  );
-
-                                  if (filtered.length > 0) {
-                                    handleProjectChange(index, filtered[0].value);
-                                  } else {
+                                  const nextIndex = currentHighlight === null || currentHighlight === filteredOptions.length - 1
+                                    ? 0
+                                    : currentHighlight + 1;
+                                  setProjectHighlightedIndex({ ...projectHighlightedIndex, [index]: nextIndex });
+                                  projectOptionRefs.current[index]?.[nextIndex]?.scrollIntoView({ block: 'nearest' });
+                                } else if (e.key === 'ArrowUp') {
+                                  e.preventDefault();
+                                  const prevIndex = currentHighlight === null || currentHighlight === 0
+                                    ? filteredOptions.length - 1
+                                    : currentHighlight - 1;
+                                  setProjectHighlightedIndex({ ...projectHighlightedIndex, [index]: prevIndex });
+                                  projectOptionRefs.current[index]?.[prevIndex]?.scrollIntoView({ block: 'nearest' });
+                                } else if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (currentHighlight !== null && filteredOptions[currentHighlight]) {
+                                    handleProjectChange(index, filteredOptions[currentHighlight].value);
+                                    setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
+                                    descriptionRefs.current[index]?.focus();
+                                  } else if (projectSearch[index]) {
+                                    // If no highlight but search term exists, handle as manual project
                                     handleProjectChange(index, 'manual');
+                                    setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
+                                    descriptionRefs.current[index]?.focus();
                                   }
-
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
                                   setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
-                                  descriptionRefs.current[index]?.focus();
+                                  projectRefs.current[index]?.focus(); // Focus back on the trigger button
                                 }
                               }}
                             />
-                            <div className="max-h-40 overflow-y-auto mt-2">
-                              {filterProjectOptions(projectSearch[index] || '').map((option) => (
+                            <div
+                              ref={(el) => (projectDropdownRefs.current[index] = el)}
+                              className="max-h-40 overflow-y-auto mt-2"
+                            >
+                              {filterProjectOptions(projectSearch[index] || '').map((option, optionIndex) => (
                                 <div
                                   key={option.value}
-                                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                  ref={(el) => {
+                                    if (!projectOptionRefs.current[index]) projectOptionRefs.current[index] = [];
+                                    projectOptionRefs.current[index][optionIndex] = el;
+                                  }}
+                                  className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${projectHighlightedIndex[index] === optionIndex ? 'bg-gray-100' : ''}`}
                                   onMouseDown={() => {
                                     handleProjectChange(index, option.value);
                                     setShowProjectDropdown({ ...showProjectDropdown, [index]: false });
                                     descriptionRefs.current[index]?.focus();
                                   }}
+                                  onMouseEnter={() => setProjectHighlightedIndex({ ...projectHighlightedIndex, [index]: optionIndex })}
                                 >
                                   {option.label}
                                 </div>
@@ -523,10 +645,12 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             }
                           }}
                           data-testid={`input-description-${index}`}
+                          tabIndex={0}
                         />
                       </td>
                       <td className="px-4 py-4 border-r border-border">
                         <Input
+                          ref={(el) => (goal1Refs.current[index] = el)}
                           type="text"
                           placeholder={entry.currentProject === "manual" ? "Enter Goal 1 manually" : "Goal 1 (auto-filled)"}
                           value={entry.goal1}
@@ -534,10 +658,12 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                           readOnly={entry.currentProject !== "manual"}
                           className={entry.currentProject ? "w-96" : (entry.currentProject === "manual" ? "" : "bg-muted text-muted-foreground")}
                           data-testid={`input-goal1-${index}`}
+                          tabIndex={0}
                         />
                       </td>
                       <td className="px-4 py-4 border-r border-border">
                         <Input
+                          ref={(el) => (goal2Refs.current[index] = el)}
                           type="text"
                           placeholder={entry.currentProject === "manual" ? "Enter Goal 2 manually" : "Goal 2 (auto-filled)"}
                           value={entry.goal2}
@@ -545,6 +671,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                           readOnly={entry.currentProject !== "manual"}
                           className={entry.currentProject ? "w-96" : (entry.currentProject === "manual" ? "" : "bg-muted text-muted-foreground")}
                           data-testid={`input-goal2-${index}`}
+                          tabIndex={0}
                         />
                       </td>
                       <td className="px-4 py-4 sticky right-0 bg-accent shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">
@@ -555,6 +682,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             onClick={() => handleSaveEntry(index)}
                             disabled={createEntryMutation.isPending}
                             data-testid={`button-save-${index}`}
+                            tabIndex={0}
                           >
                             Save
                           </Button>
@@ -563,6 +691,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             variant="outline"
                             onClick={() => handleDeleteNewEntry(index)}
                             data-testid={`button-cancel-${index}`}
+                            tabIndex={0}
                           >
                             Cancel
                           </Button>
@@ -690,7 +819,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             onClick={() => handleFieldCopy(entry.goal2)}
                           />
                         </td>
-                        <td className="px-4 py-4 sticky right-0 bg-card hover:bg-muted/25 shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">
+                        <td className="px-4 py-4 sticky right-0 bg-card hover:bg-muted/25 shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-auto">
                           <div className="flex items-center space-x-2">
                             <Button
                               size="sm"
@@ -720,6 +849,11 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             >
                               <Trash2 className="w-4 h-4 text-destructive" />
                             </Button>
+                            <div className="flex items-center space-x-1">
+                              <Button size="sm" variant="outline" onClick={() => handleKoinButtonClick(entry.id, entry.cnwKoin, -1)}><Minus className="w-4 h-4" /></Button>
+                              <span className="text-sm font-medium w-12 text-center">{entry.cnwKoin}</span>
+                              <Button size="sm" variant="outline" onClick={() => handleKoinButtonClick(entry.id, entry.cnwKoin, 1)}><Plus className="w-4 h-4" /></Button>
+                            </div>
                           </div>
                         </td>
                       </tr>

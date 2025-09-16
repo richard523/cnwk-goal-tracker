@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -10,7 +10,73 @@ import type { GoalEntry } from "@shared/schema";
 import { goalStorageUtility } from "@/lib/localStorage"; // Renamed to avoid conflict with global localStorage
 
 export default function Home() {
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
+  const [isSenseiNameExpired, setIsSenseiNameExpired] = useState(false);
+  const [savedSenseiName, setSavedSenseiName] = useState("");
+
+  useEffect(() => {
+    const senseiNameData = localStorage.getItem('savedSenseiName');
+    if (senseiNameData) {
+      try {
+        const { name } = JSON.parse(senseiNameData);
+        if (name) {
+          setSavedSenseiName(name);
+        }
+      } catch (error) {
+        setSavedSenseiName(senseiNameData);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const senseiNameData = localStorage.getItem('savedSenseiName');
+    if (senseiNameData) {
+      try {
+        const { name, timestamp } = JSON.parse(senseiNameData);
+        if (!name || (new Date().getTime() - timestamp > 24 * 60 * 60 * 1000)) {
+          setIsSenseiNameExpired(true);
+          toast({
+            title: "Sensei name needs an update!",
+            description: "Please update the Sensei name to continue adding entries.",
+            variant: "destructive",
+            persistent: true,
+          });
+        } else {
+          setIsSenseiNameExpired(false);
+        }
+      } catch (error) {
+        toast({
+          title: "Sensei name format is outdated",
+          description: "Please re-save the Sensei name to enable expiration tracking.",
+          variant: "default",
+          persistent: true,
+        });
+      }
+    } else {
+      setIsSenseiNameExpired(true);
+      toast({
+        title: "Sensei name not set!",
+        description: "Please set a Sensei name to start adding entries.",
+        variant: "destructive",
+        persistent: true,
+      });
+    }
+  }, [toast, savedSenseiName]);
+
+  const handleSenseiNameChange = (name: string) => {
+    const senseiNameData = {
+      name,
+      timestamp: new Date().getTime(),
+    };
+    localStorage.setItem('savedSenseiName', JSON.stringify(senseiNameData));
+    setSavedSenseiName(name);
+    setIsSenseiNameExpired(false);
+    dismiss();
+    toast({
+      title: "Success",
+      description: "Sensei name saved!",
+    });
+  };
 
   // Fetch goal entries from local storage
   const { data: entries = [], isLoading } = useQuery<GoalEntry[]>({
@@ -20,12 +86,16 @@ export default function Home() {
 
   // Clear all entries mutation
   const clearAllMutation = useMutation({
-    mutationFn: () => goalStorageUtility.clearAllGoalEntries(),
+    mutationFn: async () => {
+      await goalStorageUtility.clearAllGoalEntries();
+      localStorage.removeItem('savedSenseiName');
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goalEntries'] });
+      setSavedSenseiName("");
       toast({
         title: "Success",
-        description: "All entries cleared successfully",
+        description: "All entries and Sensei name cleared successfully",
       });
     },
     onError: () => {
@@ -48,7 +118,7 @@ export default function Home() {
       return;
     }
 
-    const headers = ['Date', 'Sensei Name', 'Ninja Name', 'Current Project', 'Description', 'Goal 1', 'Goal 2'];
+    const headers = ['Date', 'Sensei Name', 'Ninja Name', 'Current Project', 'Description', 'Goal 1', 'Goal 2', "Today's tracked CNWKoin"];
     const csvContent = [
       headers.join(','),
       ...entries.map(entry => [
@@ -58,7 +128,8 @@ export default function Home() {
         entry.currentProject,
         entry.description,
         entry.goal1,
-        entry.goal2
+        entry.goal2,
+        entry.cnwKoin
       ].map(field => `"${field}"`).join(','))
     ].join('\n');
 
@@ -141,7 +212,13 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Data Entry Table */}
-        <DataEntryTable entries={entries} isLoading={isLoading} />
+        <DataEntryTable
+          entries={entries}
+          isLoading={isLoading}
+          isSenseiNameExpired={isSenseiNameExpired}
+          savedSenseiName={savedSenseiName}
+          onSenseiNameChange={handleSenseiNameChange}
+        />
 
         {/* Statistics Cards */}
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

@@ -13,6 +13,7 @@ type ToasterToast = ToastProps & {
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  persistent?: boolean
 }
 
 const actionTypes = {
@@ -58,6 +59,11 @@ const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
     return
+  }
+
+  const toastToRemove = memoryState.toasts.find((t) => t.id === toastId);
+  if (toastToRemove && toastToRemove.persistent) {
+    return;
   }
 
   const timeout = setTimeout(() => {
