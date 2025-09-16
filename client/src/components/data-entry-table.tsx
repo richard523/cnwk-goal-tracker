@@ -495,7 +495,7 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
                               variant="outline"
                               role="combobox"
                               className="w-full justify-between font-normal truncate"
-                              onFocus={() => setShowNinjaDropdown({ ...showNinjaDropdown, [index]: true })}
+                              
                               tabIndex={0}
                             >
                               {entry.ninjaName || "Select Ninja..."}
@@ -604,7 +604,6 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
                               variant="outline"
                               role="combobox"
                               className="w-full justify-between font-normal truncate"
-                              onFocus={() => setShowProjectDropdown({ ...showProjectDropdown, [index]: true })}
                               tabIndex={0}
                             >
                               {PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || "Select Project..."}
@@ -778,8 +777,7 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
                                 variant="outline"
                                 role="combobox"
                                 className="w-full justify-between font-normal truncate"
-                                onFocus={() => setShowEditingNinjaDropdown(true)}
-                                onClick={() => setShowEditingNinjaDropdown((prev) => !prev)} // Added onClick to toggle dropdown
+                                
                                 tabIndex={0}
                               >
                                 {(editedEntry.ninjaName || entry.ninjaName) || "Select Ninja..."}
@@ -886,8 +884,6 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
                                 variant="outline"
                                 role="combobox"
                                 className="w-full justify-between font-normal truncate"
-                                onFocus={() => setShowEditingProjectDropdown(true)}
-                                onClick={() => setShowEditingProjectDropdown((prev) => !prev)} // Added onClick to toggle dropdown
                                 tabIndex={0}
                               >
                                 {PROJECT_STATUS_OPTIONS.find(opt => opt.value === (editedEntry.currentProject || entry.currentProject))?.label || "Select Project..."}
@@ -1122,3 +1118,5 @@ export function DataEntryTable({ entries, isLoading, isSenseiNameExpired, savedS
     </div>
   );
 }
+
+  
