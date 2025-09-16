@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Plus, Copy, Trash2, Table, ChevronsUpDown, Pencil } from "lucide-react";
+import { Plus, Copy, Trash2, Table, ChevronsUpDown, Pencil, Minus } from "lucide-react";
 import { PROJECT_STATUS_MAPPING, PROJECT_STATUS_OPTIONS, type GoalEntry, type InsertGoalEntry } from "@shared/schema";
 import { goalStorageUtility } from "@/lib/localStorage"; // Renamed to avoid conflict with global localStorage
+import { useDebouncedCallback } from "use-debounce";
 
 interface DataEntryTableProps {
   entries: GoalEntry[];
@@ -23,6 +24,7 @@ interface FormEntry {
   description: string;
   goal1: string;
   goal2: string;
+  cnwKoin: number;
 }
 
 export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
@@ -56,10 +58,24 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
   // Load saved sensei name from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('savedSenseiName');
-    if (saved) {
-      setSavedSenseiName(saved);
-    }
+    const migrateData = async () => {
+      const entries = await goalStorageUtility.getGoalEntries();
+      const migrationNeeded = entries.some(entry => entry.cnwKoin === undefined);
+
+      if (migrationNeeded) {
+        const migratedEntries = entries.map(entry => ({
+          ...entry,
+          cnwKoin: entry.cnwKoin ?? 0,
+        }));
+        await goalStorageUtility.clearAllGoalEntries();
+        for (const entry of migratedEntries) {
+          await goalStorageUtility.createGoalEntry(entry);
+        }
+        queryClient.invalidateQueries({ queryKey: ['goalEntries'] });
+      }
+    };
+
+    migrateData();
   }, []);
 
   useEffect(() => {
@@ -102,13 +118,15 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
   // Update entry mutation
   const updateEntryMutation = useMutation({
     mutationFn: (entry: GoalEntry) => goalStorageUtility.updateGoalEntry(entry.id, entry),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['goalEntries'] });
-      toast({
-        title: "Success",
-        description: "Goal entry updated successfully",
-      });
-      setEditingEntryId(null);
+      if (Object.keys(variables).length > 2) { // More than just id and cnwKoin
+        toast({
+          title: "Success",
+          description: "Goal entry updated successfully",
+        });
+        setEditingEntryId(null);
+      }
     },
     onError: () => {
       toast({
@@ -147,6 +165,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
       description: '',
       goal1: '',
       goal2: '',
+      cnwKoin: 0,
     };
     setNewEntries([...newEntries, newEntry]);
     setFocusNewRow(true);
@@ -185,10 +204,35 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
 
   const handleSaveEntry = (index: number) => {
     const entry = newEntries[index];
+    if (!entry.ninjaName) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in ninja name.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!entry.currentProject) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a current project.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!entry.description) {
+      toast({
+        title: "--> Scroll --> to fill in description",
+        description: "Description can be smaller goals, subtasks, project details, topics we're learning at the Dojo, or any other relevant info to journal for the parents.",
+        variant: "destructive",
+      })
+      return;
+    }
+
     if (!entry.ninjaName || !entry.currentProject || !entry.description) {
       toast({
         title: "Validation Error",
-        description: "Please fill in ninja name, current project, and description",
+        description: "Please fill in ninja name, current project, and description.",
         variant: "destructive",
       });
       return;
@@ -218,7 +262,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
     const projectLabel = entry.currentProject === "manual" 
       ? "Describe Manually" 
       : (PROJECT_STATUS_OPTIONS.find(opt => opt.value === entry.currentProject)?.label || entry.currentProject);
-    const formattedString = `${entry.date}, ${entry.senseiName}, ${entry.ninjaName}, ${projectLabel}, ${entry.description}, Goal 1: ${entry.goal1}, Goal 2: ${entry.goal2}`;
+    const formattedString = `${entry.date}, ${entry.senseiName}, ${entry.ninjaName}, ${projectLabel}, ${entry.description}, Goal 1: ${entry.goal1}, Goal 2: ${entry.goal2}, Today's CNWKoin: ${entry.cnwKoin}`;
     
     navigator.clipboard.writeText(formattedString).then(() => {
       toast({
@@ -254,6 +298,25 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
     if (editedEntry.id) {
       updateEntryMutation.mutate(editedEntry as GoalEntry);
     }
+  };
+
+  const handleUpdateKoin = (id: string, currentKoin: number, change: number) => {
+    const newKoin = currentKoin + change;
+    updateEntryMutation.mutate({ id, cnwKoin: newKoin } as GoalEntry);
+  };
+
+  const debouncedUpdateKoin = useDebouncedCallback(handleUpdateKoin, 300);
+
+  const handleKoinButtonClick = (id: string, currentKoin: number, change: number) => {
+    const newKoin = currentKoin + change;
+    // Optimistically update the UI
+    queryClient.setQueryData(['goalEntries'], (oldData: GoalEntry[] | undefined) => {
+      if (!oldData) return [];
+      return oldData.map(entry => 
+        entry.id === id ? { ...entry, cnwKoin: newKoin } : entry
+      );
+    });
+    debouncedUpdateKoin(id, currentKoin, change);
   };
 
   const handleFieldCopy = (text: string) => {
@@ -690,7 +753,7 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             onClick={() => handleFieldCopy(entry.goal2)}
                           />
                         </td>
-                        <td className="px-4 py-4 sticky right-0 bg-card hover:bg-muted/25 shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-36">
+                        <td className="px-4 py-4 sticky right-0 bg-card hover:bg-muted/25 shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.15)] w-auto">
                           <div className="flex items-center space-x-2">
                             <Button
                               size="sm"
@@ -720,6 +783,11 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                             >
                               <Trash2 className="w-4 h-4 text-destructive" />
                             </Button>
+                            <div className="flex items-center space-x-1">
+                              <Button size="sm" variant="outline" onClick={() => handleKoinButtonClick(entry.id, entry.cnwKoin, -1)}><Minus className="w-4 h-4" /></Button>
+                              <span className="text-sm font-medium w-12 text-center">{entry.cnwKoin}</span>
+                              <Button size="sm" variant="outline" onClick={() => handleKoinButtonClick(entry.id, entry.cnwKoin, 1)}><Plus className="w-4 h-4" /></Button>
+                            </div>
                           </div>
                         </td>
                       </tr>

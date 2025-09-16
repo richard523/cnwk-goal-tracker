@@ -26,7 +26,8 @@ export const goalStorageUtility = { // Now uses localStorage
     const newEntry: GoalEntry = {
       ...insertEntry,
       id: nanoid(), // Generate unique ID
-      createdAt: new Date().toISOString(), // Store as ISO string
+      cnwKoin: insertEntry.cnwKoin || 0,
+      createdAt: new Date(), // Store as Date object
     };
     const updatedEntries = [newEntry, ...existingEntries];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedEntries));
