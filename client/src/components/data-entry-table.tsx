@@ -378,7 +378,14 @@ export function DataEntryTable({ entries, isLoading }: DataEntryTableProps) {
                                 </div>
                               ))}
                               {ninjaNameSearch[index] && !getUniqueNinjaNames().includes(ninjaNameSearch[index]) && (
-                                <div className="px-3 py-2 text-sm text-blue-600 bg-blue-50">
+                                <div
+                                  className="px-3 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 cursor-pointer"
+                                  onMouseDown={() => {
+                                    handleInputChange(index, 'ninjaName', ninjaNameSearch[index]);
+                                    setShowNinjaDropdown({ ...showNinjaDropdown, [index]: false });
+                                    projectRefs.current[index]?.focus();
+                                  }}
+                                >
                                   Add "{ninjaNameSearch[index]}" as new ninja
                                 </div>
                               )}
