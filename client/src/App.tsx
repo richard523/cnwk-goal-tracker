@@ -33,13 +33,9 @@ function App() {
   }, []);
 
   const handleLogin = (username: any, password: any) => {
-    console.log("VITE_USERNAME length:", import.meta.env.VITE_USERNAME?.length);
-    console.log("VITE_PASSWORD length:", import.meta.env.VITE_PASSWORD?.length);
-    console.log("Entered username length:", username.length);
-    console.log("Entered password length:", password.length);
     if (
-      username === import.meta.env.VITE_USERNAME &&
-      password === import.meta.env.VITE_PASSWORD
+      username.trim() === import.meta.env.VITE_USERNAME?.trim() &&
+      password.trim() === import.meta.env.VITE_PASSWORD?.trim()
     ) {
       setIsAuthenticated(true);
       localStorage.setItem("authenticated", "true");
