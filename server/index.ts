@@ -9,19 +9,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.post("/api/login", (req, res) => {
-  const { username, password } = req.body;
-  console.log("USERNAME:", process.env.USERNAME);
-  console.log("PASSWORD:", process.env.PASSWORD);
-  if (
-    username === process.env.USERNAME &&
-    password === process.env.PASSWORD
-  ) {
-    res.status(200).send("OK");
-  } else {
-    res.status(401).send("Unauthorized");
-  }
-});
+
 
 app.use((req, res, next) => {
   const start = Date.now();
