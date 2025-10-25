@@ -8,6 +8,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: github-pages
     permissions:
       contents: write
 
@@ -30,6 +31,11 @@ jobs:
         run: pnpm install
 
       - name: Build
+        env:
+          VITE_COGNITO_API_KEY: ${{ secrets.COGNITO_API_KEY }}
+          VITE_COGNITO_ORG_KEY: ${{ secrets.COGNITO_ORG_KEY }}
+          USERNAME: ${{secrets.USERNAME}}
+          PASSWORD: ${{secrets.PASSWORD}}
         run: pnpm run build:client
 
       - name: Deploy
