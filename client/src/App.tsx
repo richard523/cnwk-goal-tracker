@@ -33,6 +33,8 @@ function App() {
   }, []);
 
   const handleLogin = (username: any, password: any) => {
+    console.log("VITE_USERNAME length:", import.meta.env.VITE_USERNAME?.length);
+    console.log("VITE_PASSWORD length:", import.meta.env.VITE_PASSWORD?.length);
     if (
       username === import.meta.env.VITE_USERNAME &&
       password === import.meta.env.VITE_PASSWORD
