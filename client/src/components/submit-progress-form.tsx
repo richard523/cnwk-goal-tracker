@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { queryClient } from "@/lib/queryClient";
+import type { ProgressReportEntry } from "./progress-report-table";
 
 async function submitProgress(data: any) {
   const response = await fetch("/api/submit-progress", {
@@ -27,7 +28,11 @@ async function submitProgress(data: any) {
   return response.json();
 }
 
-export function SubmitProgressForm() {
+interface SubmitProgressFormProps {
+  entries: ProgressReportEntry[];
+}
+
+export function SubmitProgressForm({ entries }: SubmitProgressFormProps) {
   const { toast } = useToast();
   const [senseiName, setSenseiName] = useState("");
   const [studentId, setStudentId] = useState("");
@@ -41,6 +46,26 @@ export function SubmitProgressForm() {
   const [firstGoalNext, setFirstGoalNext] = useState("");
   const [secondGoalNext, setSecondGoalNext] = useState("");
   const [senseiNotes, setSenseiNotes] = useState("");
+  const [suggestions, setSuggestions] = useState<ProgressReportEntry[]>([]);
+
+  useEffect(() => {
+    if (studentName) {
+      const filtered = entries.filter(entry => 
+        entry.studentName.toLowerCase().includes(studentName.toLowerCase())
+      );
+      setSuggestions(filtered);
+    } else {
+      setSuggestions([]);
+    }
+  }, [studentName, entries]);
+
+  const handleSuggestionClick = (entry: ProgressReportEntry) => {
+    setStudentName(entry.studentName);
+    setStudentId(entry.studentId);
+    setBelt(entry.belt);
+    setLevelId(entry.level);
+    setSuggestions([]);
+  };
 
   const mutation = useMutation({
     mutationFn: submitProgress,
@@ -124,6 +149,15 @@ export function SubmitProgressForm() {
             <div className="space-y-2">
                 <Label htmlFor="studentName">Student Name</Label>
                 <Input id="studentName" value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder="e.g., Logan Yao" />
+                {suggestions.length > 0 && (
+                  <div className="border rounded-md mt-1">
+                    {suggestions.map(suggestion => (
+                      <div key={suggestion.studentId} onClick={() => handleSuggestionClick(suggestion)} className="p-2 hover:bg-gray-200 cursor-pointer">
+                        {suggestion.studentName}
+                      </div>
+                    ))}
+                  </div>
+                )}
             </div>
             <div className="space-y-2">
                 <Label htmlFor="studentId">Student ID</Label>
