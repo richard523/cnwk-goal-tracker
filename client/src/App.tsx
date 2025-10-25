@@ -32,34 +32,21 @@ function App() {
     }
   }, []);
 
-  const handleLogin = async (username, password) => {
-    try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
+  const handleLogin = (username: any, password: any) => {
+    if (
+      username === import.meta.env.VITE_USERNAME &&
+      password === import.meta.env.VITE_PASSWORD
+    ) {
+      setIsAuthenticated(true);
+      localStorage.setItem("authenticated", "true");
+      toast({
+        title: "Success",
+        description: "Logged in successfully.",
       });
-
-      if (response.ok) {
-        setIsAuthenticated(true);
-        localStorage.setItem("authenticated", "true");
-        toast({
-          title: "Success",
-          description: "Logged in successfully.",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Invalid username or password.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
+    } else {
       toast({
         title: "Error",
-        description: "An error occurred while logging in.",
+        description: "Invalid username or password.",
         variant: "destructive",
       });
     }
