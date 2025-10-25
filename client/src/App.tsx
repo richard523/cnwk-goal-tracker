@@ -5,6 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
+import { LoginPage } from "@/pages/login";
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 function AppRouter() {
   const basePath = import.meta.env.DEV ? '/' : '/cnwk-goal-tracker/';
@@ -19,6 +22,58 @@ function AppRouter() {
 }
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const session = localStorage.getItem("authenticated");
+    if (session) {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLogin = async (username, password) => {
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (response.ok) {
+        setIsAuthenticated(true);
+        localStorage.setItem("authenticated", "true");
+        toast({
+          title: "Success",
+          description: "Logged in successfully.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Invalid username or password.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while logging in.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Toaster />
+        <LoginPage onLogin={handleLogin} />
+      </QueryClientProvider>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
