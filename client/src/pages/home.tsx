@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DataEntryTable } from "@/components/data-entry-table";
+import { SubmitProgressForm } from "@/components/submit-progress-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Target, Users, ChartLine, Clock, MessageCircleQuestion, Download, Trash2 } from "lucide-react";
@@ -219,6 +220,11 @@ export default function Home() {
           savedSenseiName={savedSenseiName}
           onSenseiNameChange={handleSenseiNameChange}
         />
+
+        {/* Submit Progress Form */}
+        <div className="mt-8">
+          <SubmitProgressForm />
+        </div>
 
         {/* Statistics Cards */}
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

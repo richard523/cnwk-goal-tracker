@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertGoalEntrySchema } from "@shared/schema";
 import { z } from "zod";
+import { handleProgressSubmission } from "./cognito";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all goal entries
@@ -48,6 +49,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "All goal entries cleared successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to clear goal entries" });
+    }
+  });
+
+  app.post("/api/submit-progress", async (req, res) => {
+    try {
+      const result = await handleProgressSubmission(req.body);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof Error) {
+        res.status(500).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "An unknown error occurred" });
+      }
     }
   });
 
