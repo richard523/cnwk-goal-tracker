@@ -33,9 +33,10 @@ function App() {
   }, []);
 
   const handleLogin = (username: any, password: any) => {
+    const correctPassword = "Unsaid8-Appraiser0-Willing9-Enviable7-Revenue8";
     if (
       username.trim() === import.meta.env.VITE_USERNAME?.trim() &&
-      password.trim() === import.meta.env.VITE_PASSWORD?.trim()
+      password.trim() === correctPassword
     ) {
       setIsAuthenticated(true);
       localStorage.setItem("authenticated", "true");
