@@ -30,9 +30,10 @@ async function submitProgress(data: any) {
 
 interface SubmitProgressFormProps {
   entries: ProgressReportEntry[];
+  onEntryAdd: (entry: ProgressReportEntry) => void;
 }
 
-export function SubmitProgressForm({ entries }: SubmitProgressFormProps) {
+export function SubmitProgressForm({ entries, onEntryAdd }: SubmitProgressFormProps) {
   const { toast } = useToast();
   const [senseiName, setSenseiName] = useState("");
   const [studentId, setStudentId] = useState("");
@@ -69,11 +70,26 @@ export function SubmitProgressForm({ entries }: SubmitProgressFormProps) {
 
   const mutation = useMutation({
     mutationFn: submitProgress,
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       toast({
         title: "Success",
         description: `Progress report submitted successfully! Entry Number: ${data.Entry.Number}`,
       });
+      const newEntry: ProgressReportEntry = {
+        senseiName: variables.SENSEI_NAME,
+        studentName: variables.STUDENT_NAME,
+        studentId: variables.STUDENT_ID,
+        belt: variables.BELT,
+        level: variables.LEVEL_ID,
+        projectId: variables.PROJECT_ID_TO_LOOKUP,
+        concepts: variables.OTHER_DETAILS.concepts,
+        goal1Completed: variables.OTHER_DETAILS.goal1Completed,
+        goal2Completed: variables.OTHER_DETAILS.goal2Completed,
+        firstGoalNextClass: variables.OTHER_DETAILS.firstGoalNext,
+        secondGoalNextClass: variables.OTHER_DETAILS.secondGoalNext,
+        senseiNotes: variables.OTHER_DETAILS.senseiNotes,
+      };
+      onEntryAdd(newEntry);
       // Reset form
       setSenseiName("");
       setStudentId("");
@@ -87,7 +103,6 @@ export function SubmitProgressForm({ entries }: SubmitProgressFormProps) {
       setFirstGoalNext("");
       setSecondGoalNext("");
       setSenseiNotes("");
-      queryClient.invalidateQueries({ queryKey: ["goalEntries"] });
     },
     onError: (error) => {
       toast({

@@ -26,6 +26,10 @@ export default function Home() {
   const { toast, dismiss } = useToast();
   const [progressEntries, setProgressEntries] = useState<ProgressReportEntry[]>(defaultEntries);
 
+  const handleEntryAdd = (entry: ProgressReportEntry) => {
+    setProgressEntries([entry, ...progressEntries]);
+  };
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -83,7 +87,7 @@ export default function Home() {
 
         {/* Submit Progress Form */}
         <div className="mt-8">
-          <SubmitProgressForm entries={progressEntries} />
+          <SubmitProgressForm entries={progressEntries} onEntryAdd={handleEntryAdd} />
         </div>
       </main>
     </div>
