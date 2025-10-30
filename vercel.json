@@ -9,8 +9,8 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist/public",
-        "installCommand": "pnpm install --frozen-lockfile",
-        "buildCommand": "pnpm run build:client"
+        "installCommand": "bun install --frozen-lockfile",
+        "buildCommand": "bun run build:client"
       }
     }
   ],
