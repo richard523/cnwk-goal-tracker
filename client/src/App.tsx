@@ -33,8 +33,8 @@ function App() {
   }, []);
 
   const handleLogin = (username: any, password: any) => {
-    const correctUsername = process.env.VITE_APP_USERNAME;
-    const correctPassword = process.env.VITE_APP_PASSWORD;
+    const correctUsername = import.meta.env.VITE_APP_USERNAME;
+    const correctPassword = import.meta.env.VITE_APP_PASSWORD;
     if (
       username.trim() === correctUsername &&
       password.trim() === correctPassword
