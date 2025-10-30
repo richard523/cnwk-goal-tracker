@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { serveStatic } from "./static";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -34,7 +34,7 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      console.log(logLine);
     }
   });
 
@@ -55,6 +55,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // setting up all the other routes so the catch-all route
 // doesn't interfere with the other routes
 if (process.env.NODE_ENV !== "production") {
+  const { setupVite } = await import("./vite.js");
   await setupVite(app, server);
 } else {
   serveStatic(app);
