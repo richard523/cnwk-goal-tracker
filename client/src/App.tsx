@@ -10,9 +10,8 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 function AppRouter() {
-  const basePath = import.meta.env.DEV ? '/' : '/cnwk-goal-tracker/';
   return (
-    <Router base={basePath}>
+    <Router>
       <Switch>
         <Route path="/" component={Home} />
         <Route component={NotFound} />
