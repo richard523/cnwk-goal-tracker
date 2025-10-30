@@ -53,10 +53,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/submit-progress", async (req, res) => {
+    console.log("Received request for /api/submit-progress with body:", JSON.stringify(req.body, null, 2));
     try {
       const result = await handleProgressSubmission(req.body);
       res.json(result);
     } catch (error) {
+      console.error("Error in /api/submit-progress:", error);
       if (error instanceof Error) {
         res.status(500).json({ message: error.message });
       } else {
