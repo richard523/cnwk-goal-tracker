@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
-import { insertGoalEntrySchema } from "@shared/schema";
+import { insertGoalEntrySchema } from "../shared/schema.js";
 import { z } from "zod";
 import { handleProgressSubmission } from "./cognito.js";
 
