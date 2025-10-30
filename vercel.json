@@ -1,7 +1,7 @@
 {
   "builds": [
     {
-      "src": "api/index.ts",
+      "src": "server/index.ts",
       "use": "@vercel/node"
     },
     {
@@ -10,14 +10,14 @@
       "config": {
         "distDir": "dist/public",
         "installCommand": "pnpm install --frozen-lockfile",
-        "buildCommand": "pnpm run build"
+        "buildCommand": "pnpm run build:client"
       }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/index.ts"
+      "dest": "/server/index.ts"
     },
     {
       "src": "/(.*)",
