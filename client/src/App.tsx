@@ -33,8 +33,8 @@ function App() {
   }, []);
 
   const handleLogin = (username: any, password: any) => {
-    const correctUsername = "admin";
-    const correctPassword = "Unsaid8-Appraiser0-Willing9-Enviable7-Revenue8";
+    const correctUsername = process.env.VITE_APP_USERNAME;
+    const correctPassword = process.env.VITE_APP_PASSWORD;
     if (
       username.trim() === correctUsername &&
       password.trim() === correctPassword
