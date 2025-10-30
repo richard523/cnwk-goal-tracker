@@ -107,5 +107,11 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "rollup": "npm:rollup@^4.9.6",
+      "@rollup/rollup-linux-x64-gnu": "npm:@rollup/rollup-linux-x64-gnu@^4.9.6"
+    }
   }
 }
