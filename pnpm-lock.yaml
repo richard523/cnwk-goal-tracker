@@ -4,6 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  rollup: npm:rollup@^4.9.6
+  '@rollup/rollup-linux-x64-gnu': npm:@rollup/rollup-linux-x64-gnu@^4.9.6
+
 importers:
 
   .:
@@ -214,7 +218,7 @@ importers:
         specifier: ^0.0.3
         version: 0.0.3
       '@rollup/rollup-linux-x64-gnu':
-        specifier: ^4.52.5
+        specifier: npm:@rollup/rollup-linux-x64-gnu@^4.9.6
         version: 4.52.5
       '@tailwindcss/typography':
         specifier: ^0.5.15
