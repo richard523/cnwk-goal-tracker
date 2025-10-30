@@ -10,9 +10,9 @@
 ```prompt
 hey chatgpt how to install Node 22.13.0 on [my system]
 ```
-- Install [pnpm](https://pnpm.io/installation)
+- Install [bun](https://bun.com)
 ```prompt
-hey chatgpt how to install pnpm latest on [my system]
+hey chatgpt how to install bun latest on [my system]
 ```
 
 ## Clone and run:
@@ -22,6 +22,6 @@ git clone https://github.com/richard523/cnwk-goal-tracker.git
 ```
 In the cloned directory, run:
 ```
-pnpm install
-pnpm dev
+bun install
+bun dev
 ```
