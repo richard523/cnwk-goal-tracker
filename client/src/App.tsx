@@ -36,7 +36,7 @@ function App() {
     const correctUsername = "admin";
     const correctPassword = "Unsaid8-Appraiser0-Willing9-Enviable7-Revenue8";
     if (
-      username.trim() === import.meta.env.VITE_USERNAME?.trim() &&
+      username.trim() === correctUsername &&
       password.trim() === correctPassword
     ) {
       setIsAuthenticated(true);
