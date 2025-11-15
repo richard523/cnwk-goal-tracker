@@ -77,6 +77,93 @@ async function getEntry(formId: string, entryId: string): Promise<any> {
   });
 }
 
+async function getAllEntries(formId: string): Promise<any[]> {
+  const apiKey = process.env.COGNITO_API_KEY;
+  if (!apiKey) {
+    throw new Error('COGNITO_API_KEY environment variable is not set');
+  }
+
+  const options = {
+    hostname: 'www.cognitoforms.com',
+    port: 443,
+    path: `/api/forms/${formId}/entries`,
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Accept': 'application/json'
+    }
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let responseData = '';
+      res.on('data', (chunk) => { responseData += chunk; });
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            const data = JSON.parse(responseData);
+            // Cognito Forms API returns entries in a Data array
+            resolve(data.Data || []);
+          } catch (e) {
+            reject(new Error('Failed to parse JSON response from getAllEntries.'));
+          }
+        } else {
+          reject(new Error(`[getAllEntries] HTTP ${res.statusCode}: ${responseData}`));
+        }
+      });
+    });
+
+    req.on('error', (error) => reject(error));
+    req.end();
+  });
+}
+
+export interface Student {
+  id: string; // Entry number/ID
+  name: string; // Full name (e.g., "Logan Yao")
+}
+
+export async function fetchAllStudents(): Promise<Student[]> {
+  // The form ID for students - this should match the form that contains student names
+  // Using the progress report form (132) to extract unique student name/ID pairs
+  const STUDENTS_FORM_ID = process.env.COGNITO_STUDENTS_FORM_ID || '132';
+  
+  console.log(`📥 Fetching all students from form ${STUDENTS_FORM_ID}...`);
+  
+  try {
+    const entries = await getAllEntries(STUDENTS_FORM_ID);
+    console.log(`📊 Found ${entries.length} entries`);
+    
+    // Extract unique student name/ID pairs from entries
+    // Assuming entries have a "Name" field with Id and Label
+    const studentMap = new Map<string, Student>();
+    
+    for (const entry of entries) {
+      if (entry.Name) {
+        const studentId = entry.Name.Id || entry.Entry?.Number?.toString();
+        const studentName = entry.Name.Label || entry.Name;
+        
+        if (studentId && studentName) {
+          // Use ID as key to ensure uniqueness
+          if (!studentMap.has(studentId)) {
+            studentMap.set(studentId, {
+              id: studentId,
+              name: studentName
+            });
+          }
+        }
+      }
+    }
+    
+    const students = Array.from(studentMap.values());
+    console.log(`✅ Extracted ${students.length} unique students`);
+    return students;
+  } catch (error) {
+    console.error('❌ Error fetching students:', error);
+    throw error;
+  }
+}
+
 async function submitProgressReport(data: ProgressReportSubmission): Promise<any> {
   const apiKey = process.env.COGNITO_API_KEY;
   if (!apiKey) {

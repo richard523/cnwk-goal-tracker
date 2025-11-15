@@ -1,9 +1,9 @@
 import { type GoalEntry, type InsertGoalEntry } from "@shared/schema";
-import { nanoid } from "nanoid"; // Using nanoid for ID generation
+import { nanoid } from "nanoid";
 
 const LOCAL_STORAGE_KEY = "goal_entries";
 
-export const goalStorageUtility = { // Now uses localStorage
+export const goalStorageUtility = {
   async getGoalEntries(): Promise<GoalEntry[]> {
     const storedValue = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (storedValue) {
@@ -25,9 +25,9 @@ export const goalStorageUtility = { // Now uses localStorage
     const existingEntries = await this.getGoalEntries();
     const newEntry: GoalEntry = {
       ...insertEntry,
-      id: nanoid(), // Generate unique ID
+      id: nanoid(),
       cnwKoin: insertEntry.cnwKoin || 0,
-      createdAt: new Date(), // Store as Date object
+      createdAt: new Date(),
     };
     const updatedEntries = [newEntry, ...existingEntries];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedEntries));

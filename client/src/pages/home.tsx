@@ -5,8 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Target } from "lucide-react";
 import { ProgressReportTable, type ProgressReportEntry } from "@/components/progress-report-table";
 
-const defaultEntries: ProgressReportEntry[] = [
+const PROGRESS_ENTRIES_STORAGE_KEY = "progress_entries";
+
+const createDefaultEntries = (): ProgressReportEntry[] => [
   {
+    id: crypto.randomUUID(),
     senseiName: 'Joshua',
     studentName: 'Logan Yao',
     studentId: '461',
@@ -22,9 +25,35 @@ const defaultEntries: ProgressReportEntry[] = [
   }
 ];
 
+const loadProgressEntries = (): ProgressReportEntry[] => {
+  try {
+    const stored = localStorage.getItem(PROGRESS_ENTRIES_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as ProgressReportEntry[];
+      return parsed;
+    }
+  } catch (e) {
+    console.error("Failed to load progress entries from localStorage", e);
+  }
+  return createDefaultEntries();
+};
+
+const saveProgressEntries = (entries: ProgressReportEntry[]) => {
+  try {
+    localStorage.setItem(PROGRESS_ENTRIES_STORAGE_KEY, JSON.stringify(entries));
+  } catch (e) {
+    console.error("Failed to save progress entries to localStorage", e);
+  }
+};
+
 export default function Home() {
   const { toast, dismiss } = useToast();
-  const [progressEntries, setProgressEntries] = useState<ProgressReportEntry[]>(defaultEntries);
+  const [progressEntries, setProgressEntries] = useState<ProgressReportEntry[]>(() => loadProgressEntries());
+
+  // Save to localStorage whenever entries change
+  useEffect(() => {
+    saveProgressEntries(progressEntries);
+  }, [progressEntries]);
 
   const handleEntryAdd = (entry: ProgressReportEntry) => {
     setProgressEntries([entry, ...progressEntries]);
@@ -40,6 +69,7 @@ export default function Home() {
         const newEntries: ProgressReportEntry[] = lines.map(line => {
           const [senseiName, studentName, studentId, belt, level, projectId, concepts, goal1Completed, goal2Completed, firstGoalNextClass, secondGoalNextClass, senseiNotes] = line.split(',');
           return {
+            id: crypto.randomUUID(),
             senseiName,
             studentName,
             studentId,
@@ -55,6 +85,7 @@ export default function Home() {
           };
         });
         setProgressEntries(newEntries);
+        saveProgressEntries(newEntries);
         toast({ title: 'Success', description: 'CSV data loaded successfully' });
       };
       reader.readAsText(file);

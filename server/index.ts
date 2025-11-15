@@ -61,4 +61,10 @@ if (process.env.NODE_ENV !== "production") {
   serveStatic(app);
 }
 
+const port = process.env.PORT || 3000;
+server.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
+
+
 export default app;

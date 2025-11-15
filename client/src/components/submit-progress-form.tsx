@@ -9,10 +9,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { queryClient } from "@/lib/queryClient";
+import getApiUrl from "@/lib/api";
 import type { ProgressReportEntry } from "./progress-report-table";
 
 async function submitProgress(data: any) {
-  const response = await fetch("/api/submit-progress", {
+  const response = await fetch(getApiUrl("/api/submit-progress"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -76,6 +77,7 @@ export function SubmitProgressForm({ entries, onEntryAdd }: SubmitProgressFormPr
         description: `Progress report submitted successfully! Entry Number: ${data.Entry.Number}`,
       });
       const newEntry: ProgressReportEntry = {
+        id: crypto.randomUUID(),
         senseiName: variables.SENSEI_NAME,
         studentName: variables.STUDENT_NAME,
         studentId: variables.STUDENT_ID,
@@ -167,7 +169,7 @@ export function SubmitProgressForm({ entries, onEntryAdd }: SubmitProgressFormPr
                 {suggestions.length > 0 && (
                   <div className="border rounded-md mt-1">
                     {suggestions.map(suggestion => (
-                      <div key={suggestion.studentId} onClick={() => handleSuggestionClick(suggestion)} className="p-2 hover:bg-gray-200 cursor-pointer">
+                      <div key={suggestion.id} onClick={() => handleSuggestionClick(suggestion)} className="p-2 hover:bg-gray-200 cursor-pointer">
                         {suggestion.studentName}
                       </div>
                     ))}

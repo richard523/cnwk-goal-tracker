@@ -42,6 +42,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update a goal entry
+  app.put("/api/goal-entries/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updatedEntry = await storage.updateGoalEntry(id, req.body);
+      res.json(updatedEntry);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update goal entry" });
+    }
+  });
+
   // Clear all goal entries
   app.delete("/api/goal-entries", async (req, res) => {
     try {

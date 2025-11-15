@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export interface ProgressReportEntry {
+  id: string;
   senseiName: string;
   studentName: string;
   studentId: string;
@@ -58,8 +59,8 @@ export function ProgressReportTable({ entries, onEntriesChange }: ProgressReport
           </TableRow>
         </TableHeader>
         <TableBody>
-          {entries.map((entry, index) => (
-            <TableRow key={index}>
+          {entries.map((entry) => (
+            <TableRow key={entry.id}>
               <TableCell>{entry.senseiName}</TableCell>
               <TableCell>{entry.studentName}</TableCell>
               <TableCell>{entry.studentId}</TableCell>
